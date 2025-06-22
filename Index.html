@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - Agenda Pet Shop</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/feather-icons"></script>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        .gradient-bg {
+            background-color: #f0fdf4;
+            background-image: linear-gradient(to top right, #dcfce7, #a7f3d0);
+        }
+    </style>
+</head>
+<body class="gradient-bg">
+
+    <div class="min-h-screen flex items-center justify-center p-4">
+        <div class="w-full max-w-md bg-white rounded-2xl shadow-2xl p-8 space-y-6">
+            <div class="text-center">
+                <h1 class="text-3xl font-bold text-gray-800">Bem-vindo(a)!</h1>
+                <p class="text-gray-500 mt-2">Agenda de Creche e Hotel do Empório Pet</p>
+            </div>
+
+            <form id="login-form" class="space-y-6">
+                <div>
+                    <label for="email" class="block text-sm font-medium text-gray-700">Email</label>
+                    <div class="mt-1">
+                        <input id="email" name="email" type="email" autocomplete="email" required class="w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500">
+                    </div>
+                </div>
+
+                <div>
+                    <label for="password" class="block text-sm font-medium text-gray-700">Senha</label>
+                    <div class="mt-1">
+                        <input id="password" name="password" type="password" autocomplete="current-password" required class="w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500">
+                    </div>
+                </div>
+
+                <div>
+                    <button type="submit" id="login-button" class="w-full flex justify-center py-3 px-4 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 disabled:opacity-50">
+                        <span class="btn-text">Entrar</span>
+                        <span class="loader hidden animate-spin rounded-full h-5 w-5 border-t-2 border-b-2 border-white"></span>
+                    </button>
+                </div>
+            </form>
+            
+            <div id="error-message" class="hidden text-center text-sm text-red-600 bg-red-100 p-3 rounded-lg">
+                <!-- Mensagens de erro aparecerão aqui -->
+            </div>
+
+        </div>
+    </div>
+
+    <script type="module">
+        // Importações do Firebase SDK
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, onAuthStateChanged, signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+
+        // --- CONFIGURAÇÃO DO FIREBASE ---
+        // As chaves do seu projeto são inseridas aqui.
+        const firebaseConfig = {
+          apiKey: "AIzaSyCFbwPsOyYD3HtSegk0j0zDGGOcjnc1Zn4",
+          authDomain: "creche-14172.firebaseapp.com",
+          projectId: "creche-14172",
+          storageBucket: "creche-14172.appspot.com",
+          messagingSenderId: "495724593146",
+          appId: "1:495724593146:web:74c18a306d8de607a66e43",
+          measurementId: "G-0MVHX1PXE4"
+        };
+        
+        // Inicializa o Firebase
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+
+        // --- ELEMENTOS DO DOM ---
+        const loginForm = document.getElementById('login-form');
+        const loginButton = document.getElementById('login-button');
+        const btnText = loginButton.querySelector('.btn-text');
+        const loader = loginButton.querySelector('.loader');
+        const errorMessageDiv = document.getElementById('error-message');
+
+        // --- VERIFICAÇÃO DE ESTADO DE AUTENTICAÇÃO ---
+        // Se o usuário já estiver logado, redireciona para a agenda.
+        onAuthStateChanged(auth, (user) => {
+            if (user) {
+                console.log("Usuário já está logado. Redirecionando...");
+                // ** IMPORTANTE: Altere 'index.html' para o nome do seu arquivo principal da agenda **
+                window.location.href = 'agenda.html'; 
+            }
+        });
+
+        // --- LÓGICA DO FORMULÁRIO DE LOGIN ---
+        loginForm.addEventListener('submit', async (e) => {
+            e.preventDefault(); // Impede o recarregamento da página
+
+            // Pega os valores dos campos de email e senha
+            const email = loginForm.email.value;
+            const password = loginForm.password.value;
+
+            // Mostra o loader e desabilita o botão
+            setLoading(true);
+            hideError();
+
+            try {
+                // Tenta fazer o login com o Firebase Auth
+                const userCredential = await signInWithEmailAndPassword(auth, email, password);
+                const user = userCredential.user;
+                
+                console.log('Login bem-sucedido:', user.uid);
+                
+                // Redireciona para a página principal da agenda após o sucesso
+                // ** IMPORTANTE: Altere 'index.html' para o nome do seu arquivo principal da agenda **
+                window.location.href = 'index.html'; 
+
+            } catch (error) {
+                // Se der erro, mostra uma mensagem amigável
+                console.error('Erro no login:', error.code);
+                showError(getFriendlyErrorMessage(error.code));
+                setLoading(false);
+            }
+        });
+        
+        // --- FUNÇÕES AUXILIARES ---
+        function setLoading(isLoading) {
+            loginButton.disabled = isLoading;
+            btnText.classList.toggle('hidden', isLoading);
+            loader.classList.toggle('hidden', !isLoading);
+        }
+
+        function showError(message) {
+            errorMessageDiv.textContent = message;
+            errorMessageDiv.classList.remove('hidden');
+        }
+
+        function hideError() {
+            errorMessageDiv.classList.add('hidden');
+        }
+        
+        // Converte os códigos de erro do Firebase em mensagens amigáveis em português
+        function getFriendlyErrorMessage(errorCode) {
+            switch (errorCode) {
+                case 'auth/invalid-email':
+                    return 'O formato do e-mail é inválido.';
+                case 'auth/user-not-found':
+                case 'auth/wrong-password':
+                case 'auth/invalid-credential':
+                    return 'E-mail ou senha incorretos. Por favor, tente novamente.';
+                case 'auth/too-many-requests':
+                    return 'Acesso temporariamente bloqueado devido a muitas tentativas. Tente novamente mais tarde.';
+                default:
+                    return 'Ocorreu um erro inesperado. Por favor, tente novamente.';
+            }
+        }
+        
+        // Inicia os ícones
+        feather.replace();
+
+    </script>
+</body>
+</html>

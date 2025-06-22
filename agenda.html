@@ -1,0 +1,1596 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Agenda: Creche e Hotel</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Poppins:wght@500;600&display=swap" rel="stylesheet">
+    
+    <script src="https://unpkg.com/feather-icons"></script>
+    
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        /* For custom scrollbars if needed */
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #f1f1f1; }
+        ::-webkit-scrollbar-thumb { background: #888; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #555; }
+        /* Custom gradient text for title */
+        .gradient-text {
+            background: linear-gradient(to right, #047857, #0d9488);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        /* Hide number input spinners */
+        input[type='number']::-webkit-inner-spin-button,
+        input[type='number']::-webkit-outer-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
+        input[type='number'] { -moz-appearance: textfield; }
+        /* Calendar Styles */
+        .calendar-day { transition: all 0.2s ease; }
+        .calendar-day.selected { background-color: #0d9488; color: white; border-radius: 50%; font-weight: bold; }
+        .calendar-day.today { border: 2px solid #0d9488; border-radius: 50%; }
+        /* Style for select options */
+        .form-select-dark-text option { color: black; background-color: white; }
+        /* Card status colors */
+        .status-presente { background-color: #dcfce7 !important; border: 1px solid #22c55e; }
+        .status-ausente { background-color: #fee2e2 !important; border: 1px solid #ef4444; }
+        .status-hospedado { background-color: #cffafe !important; border: 1px solid #06b6d4; }
+        .status-finalizado { background-color: #f3e8ff !important; border: 1px solid #9333ea; }
+        /* Smooth transitions */
+        aside, #content-area {
+            transition: all 0.3s ease-in-out;
+        }
+        #booking-sidebar.hidden-sidebar {
+            width: 0 !important;
+            min-width: 0 !important;
+            padding: 0 !important;
+            margin: 0 !important;
+            opacity: 0;
+            transform: translateX(-100%);
+            border: none !important;
+            overflow: hidden;
+        }
+        .action-btn {
+            font-family: 'Poppins', sans-serif;
+            color: white;
+            font-size: 0.7rem;
+            font-weight: 500;
+            padding: 0.375rem 0.75rem;
+            border-radius: 0.5rem;
+            transition: background-color 0.2s;
+        }
+
+        #booking-sidebar .form-input,
+        #booking-sidebar .form-select-dark-text {
+            color: #374151;
+            background-color: #ffffff;
+            border-color: #d1d5db;
+        }
+
+        #booking-sidebar .form-input::placeholder {
+            color: #9ca3af;
+        }
+         #booking-sidebar label {
+            color: white;
+        }
+        
+        #area-geral {
+            border: 2px dashed #d1d5db;
+            border-radius: 0.75rem;
+            padding: 1rem;
+            margin-bottom: 1.5rem;
+        }
+
+        #area-geral h2, .coluna-grupo h2 {
+            font-size: 1.25rem;
+            font-weight: 700;
+            text-align: center;
+            margin-bottom: 1rem;
+            color: #4b5563;
+        }
+        
+        /* Default grid layout for all card containers */
+        #list-container,
+        .card-grid {
+             display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+            gap: 1rem;
+        }
+        
+        .container-grupos {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 1.5rem;
+        }
+        
+        .coluna-grupo {
+            padding: 1rem;
+            border-radius: 0.75rem;
+            background-color: #f9fafb;
+            border: 2px solid #e5e7eb;
+            min-height: 200px;
+        }
+        
+        .botoes-porte {
+            position: absolute;
+            bottom: 4rem; 
+            right: 0.5rem;
+            display: flex;
+            gap: 0.25rem;
+        }
+        .btn-mover-porte {
+             background-color: rgba(0,0,0,0.2);
+             color: white;
+             border-radius: 50%;
+             width: 24px;
+             height: 24px;
+             font-size: 0.75rem;
+             font-weight: bold;
+             display: flex;
+             align-items: center;
+             justify-content: center;
+             transition: background-color 0.2s;
+        }
+        .btn-mover-porte:hover {
+            background-color: rgba(0,0,0,0.4);
+        }
+         .area-contadores {
+            padding: 0.75rem;
+            background-color: #eef2ff;
+            border-radius: 0.5rem;
+            margin-bottom: 1rem;
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            font-size: 0.875rem;
+            color: #4338ca;
+            flex-wrap: wrap;
+        }
+        
+        .appointment-card .tutor-name {
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            display: block; 
+            max-width: 150px;
+        }
+
+        /* --- Estilos do Modo Compacto --- */
+        .appointment-card {
+            transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out, max-height 0.4s ease-in-out;
+        }
+
+        .modo-compacto .card-grid, .modo-compacto #list-container, .modo-compacto #historico-list-container {
+            grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+            gap: 0.5rem;
+        }
+
+        .modo-compacto .appointment-card {
+            cursor: pointer;
+            padding: 0.75rem;
+        }
+        
+        .modo-compacto .appointment-card .card-details {
+            max-height: 0;
+            overflow: hidden;
+            opacity: 0;
+            margin-top: 0;
+            transition: max-height 0.4s ease-out, opacity 0.2s ease-out;
+        }
+
+        .modo-compacto .appointment-card.expandido {
+            position: relative;
+            z-index: 10;
+            transform: scale(1.08);
+            box-shadow: 0 8px 30px rgba(0,0,0,0.2);
+        }
+
+        .modo-compacto .appointment-card.expandido .card-details {
+            max-height: 500px; /* Valor alto para garantir que todo o conteúdo caiba */
+            opacity: 1;
+            margin-top: 0.5rem;
+        }
+        /* --- Fim dos Estilos do Modo Compacto --- */
+
+        /* --- Estilos do Histórico de Serviço --- */
+        #historico-servicos {
+            margin-top: 2rem;
+            padding-top: 1.5rem;
+            border-top: 2px solid #e5e7eb;
+        }
+        #historico-servicos h2 {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #374151;
+            margin-bottom: 1rem;
+        }
+        .controles-filtro {
+            display: flex;
+            gap: 1.5rem;
+            margin-bottom: 1.5rem;
+            flex-wrap: wrap;
+        }
+        .filtro-item {
+            display: flex;
+            flex-direction: column;
+            gap: 0.25rem;
+        }
+        .filtro-item label {
+            font-size: 0.875rem;
+            font-weight: 500;
+            color: #4b5563;
+        }
+        .filtro-item input {
+            padding: 0.5rem 0.75rem;
+            border: 1px solid #d1d5db;
+            border-radius: 0.375rem;
+            min-width: 220px;
+        }
+        #historico-list-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+            gap: 1rem;
+            min-height: 100px;
+        }
+
+        /* Estilos para Tabela no Modal */
+        #generic-modal-content table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 1em;
+            margin-bottom: 1em;
+        }
+        #generic-modal-content th,
+        #generic-modal-content td {
+            border: 1px solid #d1d5db;
+            padding: 0.5rem 0.75rem;
+            text-align: left;
+        }
+        #generic-modal-content th {
+            background-color: #f3f4f6;
+            font-weight: 600;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 antialiased">
+
+    <div class="container mx-auto p-4 md:p-8 min-h-screen flex items-center justify-center">
+        <div class="w-full max-w-7xl bg-white rounded-2xl shadow-2xl p-6 md:p-8 space-y-6">
+            
+            <header class="text-center">
+                <h1 class="text-3xl md:text-4xl font-bold gradient-text">Agenda: Creche e Hotel</h1>
+                <p id="user-id-display" class="text-xs text-gray-400 mt-2">Carregando...</p>
+            </header>
+
+            <nav class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <button data-tab="reception" class="tab-btn active-tab flex items-center justify-center gap-2">
+                    <i data-feather="clipboard" class="w-4 h-4"></i><span>Recepção</span>
+                </button>
+                <button data-tab="creche" class="tab-btn flex items-center justify-center gap-2">
+                    <i data-feather="sun" class="w-4 h-4"></i><span>Creche</span>
+                </button>
+                <button data-tab="hotel" class="tab-btn flex items-center justify-center gap-2">
+                    <i data-feather="moon" class="w-4 h-4"></i><span>Hotel</span>
+                </button>
+                <button data-tab="taxi" class="tab-btn flex items-center justify-center gap-2">
+                    <i data-feather="truck" class="w-4 h-4"></i><span>Taxi Dog</span>
+                </button>
+            </nav>
+
+            <main id="main-content" class="flex flex-row gap-6 md:gap-8 relative">
+                
+                <aside id="booking-sidebar" class="w-full md:w-1/3 lg:w-1/4 p-6 bg-gradient-to-br from-green-700 to-teal-800 text-white rounded-xl shadow-lg border-2 border-purple-300 min-w-[320px]">
+                    <div class="flex justify-between items-center mb-6">
+                        <h2 class="text-2xl font-bold whitespace-nowrap flex items-center gap-2">
+                            <i data-feather="plus-circle" class="w-6 h-6"></i>
+                            <span>Novo Agendamento</span>
+                        </h2>
+                    </div>
+                    <form id="booking-form" class="space-y-4 overflow-y-auto">
+                        </form>
+                </aside>
+
+                <div id="content-area" class="w-full md:w-2/3 lg:w-3/4 bg-white p-6 rounded-xl border-2 border-purple-300 shadow-inner">
+                    <div id="content-display" class="space-y-6">
+                        </div>
+                </div>
+            </main>
+        </div>
+    </div>
+    
+    <div id="edit-modal" class="hidden fixed inset-0 bg-black bg-opacity-60 z-50 flex items-center justify-center p-4">
+        <div class="bg-white rounded-lg shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+             <div class="p-6">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="text-2xl font-bold text-gray-800">Editar Agendamento</h3>
+                    <button id="close-edit-modal-btn" class="text-gray-500 hover:text-gray-800 text-3xl leading-none">&times;</button>
+                </div>
+                <form id="edit-form" class="space-y-4">
+                    </form>
+            </div>
+        </div>
+    </div>
+
+    <div id="checklist-modal" class="hidden fixed inset-0 bg-black bg-opacity-60 z-50 flex items-center justify-center p-4">
+        <div class="bg-white rounded-lg shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+             <div id="printable-checklist" class="p-6">
+                <div class="flex justify-between items-center mb-4 border-b pb-4">
+                    <h3 class="text-2xl font-bold text-gray-800">Checklist de Hospedagem</h3>
+                    <button id="close-checklist-modal-btn" class="text-gray-500 hover:text-gray-800 text-3xl leading-none no-print">&times;</button>
+                </div>
+                <form id="checklist-form" class="space-y-4">
+                    <div id="checklist-info" class="mb-6"></div>
+                    <div id="checklist-items" class="space-y-4"></div>
+                     <div class="mt-6 border-t pt-4">
+                         <label for="observacoes-gerais" class="block text-sm font-semibold text-gray-700 mb-2">Observações Gerais</label>
+                         <textarea id="observacoes-gerais" name="observacoes-gerais" rows="3" class="form-input w-full p-2 border rounded-md"></textarea>
+                    </div>
+                     <div class="mt-8 border-t pt-8 flex items-end gap-4">
+                        <label class="block text-sm font-semibold text-gray-700 mb-1 whitespace-nowrap">Assinatura do Tutor:</label>
+                        <div class="border-b border-gray-400 w-full"></div>
+                    </div>
+                    <div class="flex justify-end pt-4 gap-4 no-print">
+                        <button type="button" id="print-checklist-btn" class="px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700">Imprimir</button>
+                        <button type="submit" class="px-6 py-2 bg-green-600 text-white rounded-md hover:bg-green-700">Salvar Checklist</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Modal Genérico para Conteúdos -->
+    <div id="generic-content-modal" class="hidden fixed inset-0 bg-black bg-opacity-60 z-50 flex items-center justify-center p-4">
+        <div class="bg-white rounded-lg shadow-xl w-full max-w-6xl max-h-[90vh] overflow-y-auto">
+             <div class="p-8">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 id="generic-modal-title" class="text-3xl font-bold text-gray-800"></h3>
+                    <button id="close-generic-modal-btn" class="text-gray-500 hover:text-gray-800 text-3xl leading-none">&times;</button>
+                </div>
+                <div id="generic-modal-content" class="prose max-w-none">
+                    <!-- Conteúdo será injetado aqui -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal de Confirmação Genérico -->
+    <div id="confirmation-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+        <div class="bg-white rounded-lg shadow-xl p-6 w-full max-w-sm text-center">
+            <h3 id="modal-title" class="text-xl font-bold mb-4">Confirmar Ação</h3>
+            <p id="modal-message" class="text-gray-600 mb-6">Você tem certeza?</p>
+            <div class="flex justify-center gap-4">
+                <button id="modal-cancel-btn" class="px-6 py-2 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300">Cancelar</button>
+                <button id="modal-confirm-btn" class="px-6 py-2 bg-red-600 text-white rounded-md hover:bg-red-700">Confirmar</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Modal de Senha para Abas -->
+    <div id="password-modal" class="hidden fixed inset-0 bg-black bg-opacity-60 z-50 flex items-center justify-center p-4">
+        <div class="bg-white rounded-lg shadow-xl p-8 w-full max-w-sm">
+            <h3 class="text-2xl font-bold text-gray-800 mb-4 text-center">Acesso Restrito</h3>
+            <p class="text-gray-600 mb-6 text-center">Por favor, insira a senha para continuar.</p>
+            <form id="password-form">
+                <div class="space-y-4">
+                    <div>
+                        <label for="password-input" class="sr-only">Senha</label>
+                        <input type="password" id="password-input" class="form-input text-center text-lg" required>
+                        <p id="password-error" class="text-red-500 text-sm mt-2 text-center h-5"></p>
+                    </div>
+                    <div class="flex justify-center gap-4">
+                        <button type="button" id="password-cancel-btn" class="px-6 py-2 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300">Cancelar</button>
+                        <button type="submit" class="px-6 py-2 bg-green-600 text-white rounded-md hover:bg-green-700">Confirmar</button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, collection, onSnapshot, addDoc, updateDoc, deleteDoc, Timestamp, serverTimestamp, writeBatch } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        
+        // --- CONFIG & INITIALIZATION ---
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'petshop-agenda-dev';
+        const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {
+            apiKey: "YOUR_API_KEY", authDomain: "YOUR_AUTH_DOMAIN", projectId: "YOUR_PROJECT_ID",
+            storageBucket: "YOUR_STORAGE_BUCKET", messagingSenderId: "YOUR_MESSAGING_SENDER_ID", appId: "YOUR_APP_ID"
+        };
+        const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+        const auth = getAuth(app);
+        let userId = null;
+        let appointmentsColRef = null;
+        let unsubscribeAppointments = null;
+        
+        // --- STATE MANAGEMENT ---
+        let localAppointments = [];
+        let currentTab = 'reception';
+        const todayStr = new Date().toISOString().split('T')[0];
+        const dateFilters = {
+            reception: todayStr,
+            creche: todayStr,
+            hotel: todayStr,
+            taxi: todayStr,
+        };
+        let currentHotelFilter = 'Hospedado';
+        let currentCrecheStatusFilter = '';
+        let currentTaxiRouteFilter = '';
+        let currentServiceFilter = '';
+        let isSidebarVisible = true;
+        let cardGroupAssignments = {};
+        let selectedPackageDates = [];
+        let calendarDate = new Date();
+        let isCompactMode = false;
+        
+        let targetTabForPassword = null; 
+        const TAB_PASSWORD = "dib256"; 
+
+        // --- DOM ELEMENTS (CACHE) ---
+        const tabButtons = document.querySelectorAll('.tab-btn');
+        const contentDisplay = document.getElementById('content-display');
+        const contentArea = document.getElementById('content-area');
+        const bookingSidebar = document.getElementById('booking-sidebar');
+        const bookingForm = document.getElementById('booking-form');
+        const editModal = document.getElementById('edit-modal');
+        const editForm = document.getElementById('edit-form');
+        const closeEditModalBtn = document.getElementById('close-edit-modal-btn');
+        const checklistModal = document.getElementById('checklist-modal');
+        const checklistForm = document.getElementById('checklist-form');
+        const checklistInfo = document.getElementById('checklist-info');
+        const checklistItemsContainer = document.getElementById('checklist-items');
+        const closeChecklistModalBtn = document.getElementById('close-checklist-modal-btn');
+        const userIdDisplay = document.getElementById('user-id-display');
+        const confirmationModal = document.getElementById('confirmation-modal');
+        const modalTitle = document.getElementById('modal-title');
+        const modalMessage = document.getElementById('modal-message');
+        const modalConfirmBtn = document.getElementById('modal-confirm-btn');
+        const modalCancelBtn = document.getElementById('modal-cancel-btn');
+
+        const genericContentModal = document.getElementById('generic-content-modal');
+        const genericModalTitle = document.getElementById('generic-modal-title');
+        const genericModalContent = document.getElementById('generic-modal-content');
+        const closeGenericModalBtn = document.getElementById('close-generic-modal-btn');
+
+        const passwordModal = document.getElementById('password-modal');
+        const passwordForm = document.getElementById('password-form');
+        const passwordInput = document.getElementById('password-input');
+        const passwordError = document.getElementById('password-error');
+        const passwordCancelBtn = document.getElementById('password-cancel-btn');
+
+        // --- INÍCIO: Conteúdo completo para os modais ---
+        const bancoDeConteudos = {
+            politicaRecepcao: {
+                titulo: "Política de Excelência e Procedimentos – Setor de Recepção Empório Pet",
+                html: `
+                    <h3 class="text-xl font-bold mb-4">Nossa Filosofia: O Coração do Pet Shop, o Guardião da Experiência do Cliente</h3>
+                    <p class="mb-6">A recepção é o ponto de partida para todas as experiências em nosso pet shop. O colaborador desta área é o anfitrião, o organizador e o rosto da nossa marca. O objetivo desta política é estabelecer um padrão de excelência em cada gesto, garantindo segurança, eficiência e um atendimento que transmita o nosso amor e profissionalismo em cuidar de pets.</p>
+                    <h4 class="text-lg font-bold mb-2 text-emerald-700">Seção 1: Gentileza e Atendimento ao Cliente – O Padrão de Ouro</h4>
+                    <ul class="list-disc list-inside space-y-3 mb-6">
+                        <li><strong>A Primeira e a Última Impressão:</strong> Cumprimente cada cliente que entra com um sorriso e contato visual em até 5 segundos. Use o nome do tutor e do pet sempre que possível. Ex: "Olá, Sra. Ana! Que bom ver você e o Thor de novo!". Na despedida, agradeça pela visita e convide-os a retornar.</li>
+                        <li><strong>Comunicação Clara e Empática:</strong> Ouça com atenção as necessidades e preocupações do cliente sem interromper. Comunique-se de forma clara, positiva e profissional.</li>
+                        <li><strong>Gestão de Reclamações:</strong> Ao lidar com um cliente insatisfeito, mantenha a calma e a empatia. Siga o protocolo: Ouça, Demonstre Empatia, Peça desculpas pelo transtorno e Apresente uma Solução (ou chame o gerente para resolver).</li>
+                        <li><strong>Etiqueta Digital e Telefônica:</strong> Atenda ao telefone antes do terceiro toque com uma saudação padronizada: "Bom dia/Boa tarde, [Nome do Pet Shop], [Seu Nome] falando, em que posso ajudar?". Responda às mensagens de forma ágil e profissional.</li>
+                    </ul>
+                    <h4 class="text-lg font-bold mb-2 text-emerald-700">Seção 2: Segurança – A Prioridade Inegociável da Recepção</h4>
+                     <ul class="list-disc list-inside space-y-3 mb-6">
+                        <li><strong>Princípio da Eclusa:</strong> Mantenha sempre o portão externo fechado ao abrir a porta principal, e vice-versa. Nenhum cão deve ter acesso direto e desimpedido à rua.</li>
+                        <li><strong>Guia Obrigatória:</strong> Todos os cães devem estar na guia ao entrar e sair do pet shop. Ofereça uma guia da loja caso o cliente esteja sem.</li>
+                        <li><strong>Segurança na Área da Recepção:</strong> Evite o contato direto entre cães de tutores diferentes na área de espera, a menos que ambos os tutores consintam e os cães estejam calmos.</li>
+                     </ul>
+                    <h4 class="text-lg font-bold mb-2 text-emerald-700">Seção 3: Gestão de Serviços e Agenda – A Precisão que Move o Negócio</h4>
+                     <ul class="list-disc list-inside space-y-3 mb-6">
+                        <li><strong>Agendamento Perfeito:</strong> Colete todas as informações essenciais: nome completo do tutor, nome do pet, telefone, serviço, raça/porte e observações especiais (alergias, medo, etc.).</li>
+                        <li><strong>Conhecimento dos Tempos:</strong> Entenda o tempo necessário para cada serviço para não sobrecarregar os setores. Em caso de dúvida, confirme com a equipe responsável.</li>
+                        <li><strong>Confirmação:</strong> Confirme todos os agendamentos com 24 horas de antecedência.</li>
+                        <li><strong>Comunicação Intersetorial:</strong> Transmita todas as observações e pedidos especiais do tutor de forma clara e registrada para a equipe interna.</li>
+                     </ul>
+                     <h4 class="text-lg font-bold mb-2 text-emerald-700">Seção 4: Organização, Limpeza e Gestão de Produtos</h4>
+                     <ul class="list-disc list-inside space-y-3 mb-6">
+                        <li><strong>O Ambiente como Cartão de Visita:</strong> A recepção deve estar impecavelmente limpa e organizada em todos os momentos.</li>
+                        <li><strong>Gestão do Ponto de Venda (PDV) e Produtos:</strong> Mantenha os produtos expostos de forma atraente, com os preços visíveis e as prateleiras sem pó.</li>
+                        <li><strong>Controle de Validade (FIFO):</strong> Ao repor o estoque, produtos mais novos vão para o fundo. Realize uma verificação semanal de todas as datas de validade. Produtos com vencimento em 30 dias ou menos devem ser comunicados à gerência.</li>
+                        <li><strong>Gestão de Caixa:</strong> Siga rigorosamente os procedimentos de abertura e fechamento de caixa, com máxima atenção ao processar pagamentos e fornecer o troco.</li>
+                     </ul>
+                    <div class="mt-8 pt-4 border-t">
+                        <p class="font-semibold">Termo de Compromisso do Colaborador da Recepção</p>
+                        <p class="mt-4">Eu, [Nome do Colaborador], CPF [Número do CPF], declaro que recebi, li, compreendi e concordo em seguir integralmente a "Política de Excelência e Procedimentos do Setor de Recepção" do Empório Pet.</p>
+                        <p class="mt-2">Entendo meu papel como o coração da empresa e me comprometo a executar minhas funções com máxima segurança, gentileza, atenção e organização, visando sempre a melhor experiência para nossos clientes e seus pets.</p>
+                        <p class="mt-8">[Cidade], [Data].</p>
+                        <div class="mt-8 border-t border-gray-400 w-1/2"></div>
+                        <p class="mt-2">Assinatura do Colaborador</p>
+                    </div>`
+            },
+            rotinasEquipe: {
+                titulo: "Rotinas e Alocação de Equipe",
+                html: `
+                    <h3 class="text-xl font-bold mb-4">Análise e Alocação Estratégica da Equipe (Base para Todas as Rotinas)</h3>
+                    <p class="mb-4">Com 5 funcionários, a gestão ideal para os dois grupos (Grandes e Pequenos) seria:</p>
+                    <ul class="list-disc list-inside mb-6 space-y-2">
+                        <li><strong>2 Monitores Fixos - Grupo dos Grandes:</strong> Foco total na supervisão e interação com o grupo de maior porte.</li>
+                        <li><strong>1 Monitor Fixo - Grupo dos Pequenos:</strong> Supervisão dedicada, garantindo a segurança e o conforto dos menores.</li>
+                        <li><strong>1 Monitor de Atividades (Coringa):</strong> Prepara os materiais de enriquecimento (Kongs, quebra-cabeças), higieniza brinquedos e dá suporte ao grupo com a atividade mais complexa do momento.</li>
+                        <li><strong>1 Supervisor Geral / Recepção:</strong> Gerencia chegadas/saídas, comunicação com os tutores (fotos/vídeos), supervisiona ambos os grupos e coordena os intervalos da equipe.</li>
+                    </ul>
+                    <div class="space-y-8">
+                        <div>
+                            <h4 class="text-lg font-bold mb-2 text-emerald-700">1. Rotina de Segunda-feira: "Desafio e Energia" 🧠💪</h4>
+                            <p class="mb-3"><strong>Foco:</strong> Gastar a energia acumulada do fim de semana com atividades físicas e mentais estimulantes.</p>
+                            <table><thead><tr><th>Horário</th><th>Atividade</th><th>Grupo Grandes</th><th>Grupo Pequenos</th></tr></thead><tbody><tr><td>9:00 - 9:45</td><td>Chegada e Aquecimento</td><td>Integração e brincadeiras leves para aquecer a "musculatura".</td><td>Integração e exploração do ambiente.</td></tr><tr><td>9:45 - 11:30</td><td>Olimpíadas Caninas 🏆</td><td>Circuito de Agilidade Completo: Túnel, slalom de cones, saltos baixos e rampa.</td><td>Desafio Físico: Perseguição ao "Flirt Pole" e "Dança das Bolhas" (atóxicas).</td></tr><tr><td>11:30 - 12:30</td><td>Enriquecimento Desafiador</td><td>Libertação Congelada: Brinquedos grandes ou petiscos em blocos de gelo.</td><td>Quebra-Cabeças Interativos (Nível 2): Jogos que exigem mais raciocínio.</td></tr><tr><td>12:30 - 14:00</td><td>Hora do Descanso (Obrigatório!)</td><td>Recuperação Profunda: Descanso em ambiente silencioso e com luz baixa.</td><td>Descanso supervisionado para garantir a recuperação da energia.</td></tr><tr><td>14:00 - 15:30</td><td>Treinamento e Novos Truques</td><td>Sessão de Comandos: Treino de truques novos ("gira", "toca") ou reforço de comandos à distância.</td><td>Caça ao Tesouro Avançada: Petiscos escondidos em locais mais difíceis.</td></tr><tr><td>15:30 - 16:30</td><td>Volta à Calma</td><td>Brincadeira de cabo de guerra controlada com os monitores e socialização livre.</td><td>Brinquedos recheados (Kongs) para atividade calma de lamber.</td></tr><tr><td>16:30 em diante</td><td>Preparação para a Saída</td><td>Limpeza de patas, escovação final e organização para a partida.</td><td>Limpeza, escovação e organização para a partida.</td></tr></tbody></table>
+                            <p class="mt-3"><strong>Dica de Marketing 360°:</strong> Crie a "Segunda do Desafio". Poste vídeos dos circuitos e prometa aos tutores um cão feliz e exausto ao final do dia.</p>
+                        </div>
+                        <div>
+                            <h4 class="text-lg font-bold mb-2 text-emerald-700">2. Rotina de Terça-feira: "Equilíbrio 360°" ⚖️</h4>
+                            <p class="mb-3"><strong>Foco:</strong> Um dia perfeitamente balanceado, combinando socialização, atividades de enriquecimento e descanso essencial.</p>
+                            <table><thead><tr><th>Horário</th><th>Atividade</th><th>Grupo Grandes</th><th>Grupo Pequenos</th></tr></thead><tbody><tr><td>9:00 - 9:45</td><td>Chegada e Integração Suave</td><td>Boas-vindas, liberação gradual na área de socialização.</td><td>Boas-vindas, liberação em sua área. Brinquedos leves.</td></tr><tr><td>9:45 - 11:30</td><td>Pico de Energia e Socialização</td><td>Brincadeiras livres e supervisionadas: corridas, pega-pega.</td><td>Brincadeiras supervisionadas: perseguições leves.</td></tr><tr><td>11:30 - 12:30</td><td>Enriquecimento Ambiental</td><td>Atividade Cognitiva: "Muffin Tin Game" ou Garrafas Giratórias.</td><td>Atividade Sensorial: Piscina de bolinhas com petiscos.</td></tr><tr><td>12:30 - 14:00</td><td>Hora do Descanso e "Almoço"</td><td>Cromoterapia e Musicoterapia: Luzes reduzidas, música relaxante.</td><td>Mesmo protocolo, garantindo um ambiente tranquilo.</td></tr><tr><td>14:00 - 15:30</td><td>Reativação e Atividade Guiada</td><td>Atividade Física Leve: Circuito simples com túnel e cones.</td><td>Atividade Olfativa: "Tapete de Fuçar" (Snuffle Mat).</td></tr><tr><td>15:30 - 16:30</td><td>Desaceleração e Socialização Calma</td><td>Sessão de carinho com os monitores, escovação para quem gosta.</td><td>Sessão de Leitura para Cães ou massagem relaxante.</td></tr><tr><td>16:30 em diante</td><td>Preparação para a Saída</td><td>Limpeza, escovação e organização.</td><td>Limpeza, escovação e organização.</td></tr></tbody></table>
+                            <p class="mt-3"><strong>Dica de Marketing 360°:</strong> Comunique o valor do "Ciclo Completo do Bem-Estar", mostrando que sua creche entende a importância do descanso para a saúde mental dos cães.</p>
+                        </div>
+                        <div>
+                            <h4 class="text-lg font-bold mb-2 text-emerald-700">3. Rotina de Quarta-feira: "Inteligência e Foco" 🧐</h4>
+                            <p class="mb-3"><strong>Foco:</strong> Um dia dedicado a estimular a mente, com menos impacto físico e mais queima de energia mental.</p>
+                            <table><thead><tr><th>Horário</th><th>Atividade</th><th>Grupo Grandes</th><th>Grupo Pequenos</th></tr></thead><tbody><tr><td>9:00 - 9:45</td><td>Chegada e Ativação Mental</td><td>Integração com brinquedos que liberam comida para o café da manhã.</td><td>Exploração de caixas de papelão com petiscos fáceis.</td></tr><tr><td>9:45 - 11:30</td><td>Sessão de Faro e Descoberta</td><td>Caça ao Tesouro: Vários petiscos escondidos pelo ambiente.</td><td>Jogo dos Copos & Toalha Mágica: Jogos de encontrar o petisco.</td></tr><tr><td>11:30 - 12:30</td><td>Rodízio de Quebra-Cabeças</td><td>Estação de Puzzles: Monitores apresentam diferentes quebra-cabeças (Níveis 1, 2, 3).</td><td>Estação de Puzzles: Foco em puzzles de Nível 1 e 2.</td></tr><tr><td>12:30 - 14:00</td><td>Descanso para a Mente</td><td>Soneca essencial para processar o aprendizado, com música calma.</td><td>Soneca em ambiente tranquilo.</td></tr><tr><td>14:00 - 15:30</td><td>Escola de Truques</td><td>Aprendendo Comandos: Sessão para ensinar ou reforçar comandos como "pata", "deita", "rola".</td><td>Aprendendo Comandos: Foco em truques simples e divertidos.</td></tr><tr><td>15:30 - 16:30</td><td>Relaxamento Cognitivo</td><td>Brinquedos recheados (Kongs) para uma atividade mental leve.</td><td>Socialização calma e carinho.</td></tr><tr><td>16:30 em diante</td><td>Preparação para a Saída</td><td>Limpeza, escovação e organização.</td><td>Limpeza, escovação e organização.</td></tr></tbody></table>
+                            <p class="mt-3"><strong>Dica de Marketing 360°:</strong> Crie a "Quarta dos Gênios". É um grande atrativo para tutores de raças inteligentes (Border Collie, Poodle, Golden) e mostra um cuidado sofisticado.</p>
+                        </div>
+                         <div>
+                            <h4 class="text-lg font-bold mb-2 text-emerald-700">4. Rotina de Quinta-feira: "Conexão e Equipe" 🤝</h4>
+                            <p class="mb-3"><strong>Foco:</strong> Fortalecer o vínculo entre os cães e os monitores, além de aprimorar as habilidades sociais da matilha.</p>
+                            <table><thead><tr><th>Horário</th><th>Atividade</th><th>Grupo Grandes</th><th>Grupo Pequenos</th></tr></thead><tbody><tr><td>9:00 - 9:45</td><td>Recepção e Vínculo</td><td>Boas-vindas individuais com carinho e um petisco de cada monitor.</td><td>Mesma abordagem, criando associações positivas com a equipe.</td></tr><tr><td>9:45 - 11:30</td><td>Brincadeiras em Grupo</td><td>"Siga o Mestre": Cães seguem um monitor por um circuito.</td><td>Brincadeiras com Paraquedas: Usar um paraquedas colorido para brincar.</td></tr><tr><td>11:30 - 12:30</td><td>Gincana com Monitores</td><td>"Cabo de Guerra em Equipe": Monitores fazem duplas com os cães na brincadeira.</td><td>"Pega-Bolha em Dupla": Monitor faz bolhas para um cão específico pegar.</td></tr><tr><td>12:30 - 14:00</td><td>Descanso da Matilha</td><td>Descanso em conjunto, reforçando a calma coletiva.</td><td>Descanso supervisionado.</td></tr><tr><td>14:00 - 15:30</td><td>Etiqueta e Boas Maneiras</td><td>Treino de "Senta" em Grupo: Praticar o comando em conjunto para receber um prêmio.</td><td>Treino de "Vem" e "Fica": Com reforço positivo em massa.</td></tr><tr><td>15:30 - 16:30</td><td>Sessão de Afeto Coletivo</td><td>Monitores se sentam no chão para uma grande sessão de carinho e massagem.</td><td>Mesma abordagem, reforçando o sentimento de "família".</td></tr><tr><td>16:30 em diante</td><td>Preparação para a Saída</td><td>Limpeza, escovação e organização.</td><td>Limpeza, escovação e organização.</td></tr></tbody></table>
+                            <p class="mt-3"><strong>Dica de Marketing 360°:</strong> Promova a "Quinta da Conexão", mostrando como sua creche ensina habilidades sociais e fortalece a confiança dos cães com pessoas e outros animais.</p>
+                        </div>
+                        <div>
+                            <h4 class="text-lg font-bold mb-2 text-emerald-700">5. Rotina de Sexta-feira: "Zen e Sensorial" 🧘‍♀️</h4>
+                            <p class="mb-3"><strong>Foco:</strong> Desacelerar e relaxar, enviando os cães para o fim de semana tranquilos e equilibrados.</p>
+                            <table><thead><tr><th>Horário</th><th>Atividade</th><th>Grupo Grandes</th><th>Grupo Pequenos</th></tr></thead><tbody><tr><td>9:00 - 9:45</td><td>Recepção Acolhedora</td><td>Boas-vindas com música ambiente calma.</td><td>Exploração de tecidos e cheiros relaxantes no ambiente.</td></tr><tr><td>9:45 - 11:30</td><td>Exploração Sensorial</td><td>Circuito Sensorial Completo: Caminho com diferentes texturas.</td><td>Caixas de Cheiros e Texturas: Com itens seguros e relaxantes.</td></tr><tr><td>11:30 - 12:30</td><td>Atividade Olfativa Relaxante</td><td>Tapete de Fuçar Gigante: Espalhe vários tapetes pela área.</td><td>Sessão de Aromaterapia Segura: Difusor com lavanda + música.</td></tr><tr><td>12:30 - 14:00</td><td>Soneca Profunda</td><td>Ambiente Zen: Descanso com música instrumental, sons da natureza.</td><td>Descanso com massagem leve para os cães que aceitam.</td></tr><tr><td>14:00 - 15:30</td><td>Arte e Paladar Calmo</td><td>"Pintura" com as Patas: Tinta atóxica e comestível.</td><td>Picolés Caninos de Camomila: Atividade de lamber que é calmante.</td></tr><tr><td>15:30 - 16:30</td><td>Sessão de Afeto e Conexão</td><td>Sessão de Escovação e Carinho: Monitores no chão para interagir calmamente.</td><td>Sessão de Leitura: Monitor lê histórias em voz baixa e rítmica.</td></tr><tr><td>16:30 em diante</td><td>Preparação para a Saída</td><td>Limpeza e escovação em clima de tranquilidade.</td><td>Limpeza e escovação em clima de tranquilidade.</td></tr></tbody></table>
+                            <p class="mt-3"><strong>Dica de Marketing 360°:</strong> Crie a "Sexta Zen". Destaque como sua creche se preocupa em mandar os cães para o fim de semana tranquilos e equilibrados.</p>
+                        </div>
+                    </div>`
+            },
+            listaAtividades: {
+                titulo: "A Enciclopédia de Atividades 360° para a Creche Pet",
+                html: `
+                    <p class="mb-4"><strong>Objetivo:</strong> Um guia de referência completo para a equipe, garantindo um ambiente dinâmico, divertido e desenvolvimentista para os cães, todos os dias do ano.</p>
+                    <h3 class="text-xl font-bold mt-6 mb-2">PARTE 1: O Banco Central de Atividades (+ de 50 Ideias)</h3>
+                    <p class="mb-4">Aqui está a base, organizada por estímulo. A equipe pode escolher itens desta lista para as atividades diárias.</p>
+                    <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        <div class="p-4 bg-blue-50 rounded-lg">
+                            <h4 class="font-bold text-lg mb-2">🧠 Estímulos Cognitivos (Mente Ativa)</h4>
+                            <ul class="list-disc list-inside space-y-1">
+                                <li>Quebra-Cabeças (Níveis 1, 2 e 3)</li>
+                                <li>Garrafas Giratórias de Petiscos (DIY)</li>
+                                <li>Jogo dos Copos (Ache o Petisco)</li>
+                                <li>Muffin Tin Game (com Bolinhas)</li>
+                                <li>Treinamento de Novos Truques (Ex: "Toca", "Gira", "Rebola")</li>
+                                <li>"Ache o Brinquedo" (Nomear um brinquedo específico)</li>
+                                <li>Libertação Congelada (Brinquedos/petiscos em bloco de gelo)</li>
+                                <li>Adivinhe a Mão (Clássico de esconder o petisco)</li>
+                                <li>Comandos à Distância (Pedir "senta" do outro lado da sala)</li>
+                                <li>Empilhar Argolas (Adaptado para cães)</li>
+                                <li>Abrir Caixas (Caixas de papelão com petiscos dentro)</li>
+                                <li>Esconde-Esconde (com monitores)</li>
+                            </ul>
+                        </div>
+                        <div class="p-4 bg-green-50 rounded-lg">
+                            <h4 class="font-bold text-lg mb-2">👃 Estímulos Olfativos (Faro em Ação)</h4>
+                            <ul class="list-disc list-inside space-y-1">
+                                <li>Caça ao Tesouro (Tradicional)</li>
+                                <li>Tapete de Fuçar (Snuffle Mat)</li>
+                                <li>Toalha Mágica (Petiscos enrolados)</li>
+                                <li>Caixas de Cheiros (com itens seguros: alecrim, camomila, etc.)</li>
+                                <li>Trilha de Cheiros (com essência de baunilha ou caldo)</li>
+                                <li>Chuva de Ração (Jogar ração para o alto em área externa)</li>
+                                <li>"Scatter Feeding" (Espalhar ração pela grama/piso)</li>
+                                <li>Labirinto de Papelão (com petiscos no final)</li>
+                                <li>Brinquedos Escondidos (Esconder o brinquedo favorito do cão)</li>
+                            </ul>
+                        </div>
+                        <div class="p-4 bg-red-50 rounded-lg">
+                             <h4 class="font-bold text-lg mb-2">🏃‍♂️ Estímulos Físicos e Sensoriais (Corpo em Movimento)</h4>
+                             <ul class="list-disc list-inside space-y-1">
+                                <li>Circuito Sensorial (Texturas variadas)</li>
+                                <li>Piscina de Bolinhas (com ou sem petiscos)</li>
+                                <li>Túnel de Agilidade</li>
+                                <li>Slalom entre Cones</li>
+                                <li>Dança das Bolhas (com bolhas atóxicas)</li>
+                                <li>Perseguição ao "Flirt Pole" (Vara com brinquedo)</li>
+                                <li>Cabo de Guerra Controlado (com comando "larga")</li>
+                                <li>Pega-Pega com o Monitor</li>
+                                <li>Saltos Baixos (sobre pequenos obstáculos seguros)</li>
+                                <li>Rampa de Escalada (baixa e segura)</li>
+                                <li>"Bobbing for Toys" (Pegar brinquedos flutuantes em uma bacia com água)</li>
+                                <li>Cama Elástica Baixa (com supervisão intensa)</li>
+                                <li>Hula-Hoops (para passar por dentro, no chão ou saltar)</li>
+                             </ul>
+                        </div>
+                        <div class="p-4 bg-yellow-50 rounded-lg">
+                             <h4 class="font-bold text-lg mb-2">👅 Estímulos Alimentares (Hora do Lanche Divertida)</h4>
+                             <ul class="list-disc list-inside space-y-1">
+                                <li>Brinquedos Recheados Congelados (Kongs, etc.)</li>
+                                <li>Picolés Caninos (de frutas ou caldo)</li>
+                                <li>"Dispensers" de Ração (Wobblers, bolas, etc.)</li>
+                                <li>Papelote de Petisco (Embrulhado em papel manteiga)</li>
+                                <li>Legumes Congelados (cenoura, brócolis - verificar lista segura)</li>
+                                <li>Maçã Recheada (sem sementes, com pasta de amendoim segura)</li>
+                                <li>"DIY Food Puzzles" (Petiscos em rolos de papel toalha com as pontas dobradas)</li>
+                             </ul>
+                        </div>
+                        <div class="p-4 bg-purple-50 rounded-lg">
+                             <h4 class="font-bold text-lg mb-2">🧘‍♂️ Estímulos de Relaxamento (Momento Zen)</h4>
+                             <ul class="list-disc list-inside space-y-1">
+                                <li>Sessão de Musicoterapia (música clássica/relaxante)</li>
+                                <li>Aromaterapia Segura (difusor com lavanda/camomila)</li>
+                                <li>Sessão de Massagem (Tellington TTouch, por exemplo)</li>
+                                <li>Escovação Relaxante</li>
+                                <li>Leitura para Cães (monitor lê em voz calma)</li>
+                                <li>Sessão de Carinho em Grupo (monitores no chão)</li>
+                                <li>Audição de Sons da Natureza (pássaros, água corrente)</li>
+                                <li>Contato com Tecidos (disponibilizar mantas com texturas diferentes)</li>
+                                <li>Luz Reduzida (diminuir a intensidade da luz em certos momentos)</li>
+                             </ul>
+                        </div>
+                    </div>
+                    <h3 class="text-xl font-bold mt-6 mb-2">PARTE 2: Planejamento Temático (O Pulo do Gato)</h3>
+                    <p class="mb-4">Para nunca cair na rotina, a equipe pode adotar temas semanais. Isso cria expectativa nos clientes e facilita o planejamento.</p>
+                     <ul class="list-disc list-inside mb-6 space-y-2">
+                        <li><strong>Semana do Detetive 🕵️‍♂️:</strong> Foco total em atividades olfativas e cognitivas.</li>
+                        <li><strong>Semana de Olimpíadas Caninas 🏆:</strong> Foco em atividades físicas (circuitos, saltos, túneis). No final da semana, tem "pódio" com medalhas de petisco.</li>
+                        <li><strong>Semana SPA & Zen 🧘‍♀️:</strong> Foco em atividades de relaxamento, massagem, musicoterapia. Perfeito para semanas mais frias ou chuvosas.</li>
+                        <li><strong>Semana do Artista 🎨:</strong> Atividades como "pintura com as patas" (tinta atóxica e segura), "escultura" (caixas de destruição).</li>
+                        <li><strong>Semana de Aventura na Selva 🌳:</strong> Usar elementos da natureza (folhas secas, galhos seguros), caça ao tesouro e esconde-esconde.</li>
+                        <li><strong>Semana Culinária "Master-Cão" 🧑‍🍳:</strong> Foco em estímulos alimentares, com picolés diferentes a cada dia, degustação de frutas seguras, etc.</li>
+                        <li><strong>Semana de Super-Heróis 🦸:</strong> Circuito de "treinamento de herói", missões de resgate de brinquedos, etc.</li>
+                     </ul>
+                     <h3 class="text-xl font-bold mt-6 mb-2">Ideias para Temas Sazonais/Feriados (Marketing de Ouro)</h3>
+                     <ul class="list-disc list-inside mb-6 space-y-2">
+                        <li><strong>Festa Junina Pet:</strong> "Pescaria" de brinquedos na bacia, "correio elegante" com recados dos pets, "barraca do lambeijo".</li>
+                        <li><strong>Cão-loween (Halloween):</strong> Caça a petiscos "assustadores", piscina de bolinhas laranja e preta, concurso de fantasia (para cães que toleram).</li>
+                        <li><strong>Natal Au-Au:</strong> Amigo secreto de brinquedos, sessão de fotos com gorro de Noel, confecção de biscoitos natalinos para cães.</li>
+                        <li><strong>Carnaval dos Pets:</strong> "Bloquinho de carnaval" no pátio, chuva de confete (de papel, fácil de limpar), muita música e bolhas de sabão.</li>
+                        <li><strong>Páscoa Canina:</strong> Caça aos "ovos" (bolas ou brinquedos que abrem com petiscos dentro).</li>
+                        <li><strong>Olimpíadas de Verão:</strong> Muitas atividades com água, natação se houver piscina, picolés e "bobbing for toys".</li>
+                     </ul>
+                     <h3 class="text-xl font-bold mt-6 mb-2">PARTE 3: Manual do Monitor 360°</h3>
+                     <p class="mb-4">Para sua equipe extrair o máximo de tudo isso:</p>
+                     <ul class="list-disc list-inside mb-6 space-y-2">
+                        <li><strong>Crie o "Boletim do Dia":</strong> Uma pequena lousa ou um story no Instagram/WhatsApp no final do dia. Ex: "Atividades de Hoje (Semana do Detetive): 🕵️‍♂️ Caça ao Tesouro com cheiro de frango; 🧠 Jogo dos Copos; 🧘‍♂️ Música clássica para relaxar." Os tutores AMAM saber os detalhes.</li>
+                        <li><strong>"Cão Destaque do Dia":</strong> Todo dia, escolha um cão e faça um post especial dele realizando uma atividade. Gera engajamento e agrada o tutor.</li>
+                        <li><strong>Kit de Enriquecimento Básico:</strong> A equipe deve ter sempre à mão um kit com: potes de muffin, bolinhas, cones, cordas, Kongs, formas de gelo, caixas de papelão.</li>
+                        <li><strong>A Regra dos 5 Minutos:</strong> Um novo truque ou uma atividade cognitiva não precisa durar horas. Sessões focadas de 5 minutos são extremamente eficazes e fáceis de encaixar na rotina.</li>
+                        <li><strong>Workshop de DIY:</strong> Promova uma tarde para a própria equipe construir os brinquedos (garrafas giratórias, tapetes de fuçar, etc.). Isso gera engajamento do time e economiza recursos (Gestão Financeira e de Operações).</li>
+                     </ul>`
+            },
+            crechePolicy: {
+                titulo: "Política de Comportamento e Segurança para Colaboradores – Setor de Creche e Hotel Empório Pet",
+                html: `
+                    <h3 class="text-xl font-bold mb-4">Nossa Missão: Ser o Guardião da Felicidade e Segurança de Cada Cão</h3>
+                    <p class="mb-6">Cada colaborador do Empório Pet é a peça mais importante para o sucesso da nossa missão. Vocês são os responsáveis diretos pelo bem-estar físico e emocional dos cães que nos são confiados. Esta política estabelece os padrões de conduta e segurança que garantem um ambiente excepcional para os pets, tranquilidade para os tutores e um local de trabalho seguro e profissional para toda a equipe.</p>
+                    <h4 class="text-lg font-bold mb-2 text-emerald-700">Seção 1: Segurança em Primeiro Lugar – Nossas Regras de Ouro</h4>
+                     <p class="mb-4">A segurança é inegociável. A violação de qualquer uma destas regras será tratada com a máxima seriedade.</p>
+                     <ul class="list-disc list-inside space-y-3 mb-6">
+                        <li><strong>Supervisão Ativa e Constante (A Regra dos 5 Segundos):</strong> É proibido o uso de celulares para fins pessoais na área dos cães. A atenção deve estar 100% na matilha. A cada 10 segundos, seus olhos devem escanear todo o grupo.</li>
+                        <li><strong>Manejo e Interação Correta com os Cães:</strong> Utilize apenas reforço positivo. Gritos, punições físicas ou qualquer forma de intimidação são estritamente proibidos.</li>
+                        <li><strong>Interrupção Segura:</strong> Nunca coloque seu corpo entre cães que estão brigando. Use objetos (placas, pranchas), sons altos ou jatos de água para separar os animais.</li>
+                        <li><strong>Prevenção e Gerenciamento de Conflitos:</strong> Antecipe comportamentos de risco e redirecione a atenção dos cães. Comunique imediatamente ao Supervisor qualquer interação tensa.</li>
+                        <li><strong>Controle de Acessos e Portões:</strong> Sistema de dupla checagem sempre. Nenhum portão que dá acesso à rua pode ser aberto sem que um portão interno de segurança esteja fechado.</li>
+                        <li><strong>Higiene e Saúde:</strong> Fezes e urina devem ser limpos imediatamente. Água fresca deve estar sempre disponível. Reporte qualquer sinal de anormalidade (diarreia, vômito, tosse, etc.) ao Supervisor.</li>
+                     </ul>
+                     <h4 class="text-lg font-bold mb-2 text-emerald-700">Seção 2: Conduta e Comportamento Profissional</h4>
+                      <p class="mb-4">Vocês são a cara e a voz do Empório Pet. A forma como agem impacta diretamente a confiança do cliente.</p>
+                     <ul class="list-disc list-inside space-y-3 mb-6">
+                        <li><strong>Postura Proativa e Apaixonada:</strong> Demonstre carinho e paciência com todos os cães. Chame-os pelo nome. Conheça suas personalidades.</li>
+                        <li><strong>Comunicação com o Cliente:</strong> Ao entregar um cão ao tutor, sempre tenha uma história positiva para contar. "O Thor se divertiu muito hoje!". Nunca comunique um problema diretamente; reporte ao Supervisor.</li>
+                        <li><strong>Apresentação Pessoal:</strong> O uniforme deve ser usado durante todo o expediente e mantido limpo e em bom estado.</li>
+                     </ul>
+                    <h4 class="text-lg font-bold mb-2 text-emerald-700">Seção 3: Rotinas e Responsabilidades</h4>
+                    <ul class="list-disc list-inside space-y-3 mb-6">
+                       <li><strong>Cumprimento das Rotinas:</strong> Siga rigorosamente a "Rotina do Dia" para garantir que os cães recebam os estímulos e o descanso programados.</li>
+                       <li><strong>Registro de Informações:</strong> Utilize o diário de bordo ou sistema para registrar todas as informações relevantes: alimentação, medicação, comportamentos, etc.</li>
+                       <li><strong>Organização do Espaço:</strong> Ao final do expediente, todos são responsáveis por guardar brinquedos, higienizar o material e preparar o ambiente para o dia seguinte.</li>
+                    </ul>
+                    <div class="mt-8 pt-4 border-t">
+                        <p class="font-semibold">Termo de Compromisso do Colaborador</p>
+                        <p class="mt-4">Eu, [Nome do Colaborador], portador do CPF [Número do CPF], declaro que recebi, li, compreendi e concordo em seguir integralmente a "Política de Comportamento e Segurança para Colaboradores” do Empório Pet.</p>
+                        <p class="mt-2">Entendo que meu papel é fundamental para a segurança e o bem-estar dos animais e me comprometo a agir sempre com profissionalismo, diligência e paixão, seguindo os protocolos aqui estabelecidos. Estou ciente de que o descumprimento destas diretrizes pode resultar em medidas disciplinares.</p>
+                        <p class="mt-8">[Cidade], [Data].</p>
+                        <div class="mt-8 border-t border-gray-400 w-1/2"></div>
+                        <p class="mt-2">Assinatura do Colaborador</p>
+                    </div>`
+            },
+            taxiPolicy: {
+                titulo: "Política de Excelência e Segurança – Setor de Taxi Dog Empório Pet",
+                html: `
+                    <h3 class="text-xl font-bold mb-4">Nossa Filosofia: Embaixadores Sobre Rodas, Guardiões do Bem-Estar em Trânsito</h3>
+                    <p class="mb-6">O serviço de Taxi Dog é a extensão móvel do nosso cuidado e profissionalismo. O motorista não é apenas um condutor; é um representante da nossa marca e o responsável direto pela segurança e conforto do pet durante todo o trajeto. Esta política define os padrões de excelência para garantir um transporte seguro, pontual, higiênico e de alta qualidade.</p>
+                    <h4 class="text-lg font-bold mb-2 text-emerald-700">Seção 1: Segurança do Animal em Trânsito – Nossa Carga é Preciosa</h4>
+                    <ul class="list-disc list-inside space-y-3 mb-6">
+                        <li><strong>Métodos de Transporte Seguro (ATUALIZADO):</strong>
+                            <ul class="list-circle list-inside ml-4 mt-2">
+                                <li><strong>Método Padrão e Preferencial - Caixa de Transporte:</strong> Todos os cães devem, preferencialmente, ser transportados individualmente em caixas de transporte seguras, limpas, bem ventiladas e de tamanho apropriado. Exceto os cães que não couberem dentro de uma caixa, neste caso prenda os cães na barra de segurança do veículo com uma guia.</li>
+                                <li><strong>Método de Exceção - Cinto de Segurança com Peitoral:</strong> Permissão: A viagem de cães fora da caixa de transporte é permitida apenas em casos excepcionais (ex: ansiedade severa de caixa, porte incompatível com as caixas disponíveis) e mediante autorização prévia de um supervisor.</li>
+                            </ul>
+                        </li>
+                        <li><strong>Climatização e Ventilação:</strong> O veículo deve ser mantido em temperatura agradável. Nunca deixe um animal sozinho dentro do veículo.</li>
+                        <li><strong>Procedimentos de Embarque e Desembarque:</strong> O cão deve ser recebido e entregue sempre com a guia. Entregue o cão diretamente a uma pessoa autorizada.</li>
+                    </ul>
+                    <h4 class="text-lg font-bold mb-2 text-emerald-700">Seção 2: Qualidade do Serviço e Conduta do Motorista</h4>
+                    <ul class="list-disc list-inside space-y-3 mb-6">
+                        <li><strong>Direção Defensiva e Responsável:</strong> Cumpra rigorosamente todas as leis de trânsito. Dirija de forma suave para o conforto do animal.</li>
+                        <li><strong>Pontualidade e Roteirização:</strong> Planeje sua rota com antecedência. Em caso de atrasos, comunique imediatamente à recepção.</li>
+                        <li><strong>Comunicação e Profissionalismo:</strong> Apresente-se sempre uniformizado, com aparência limpa e profissional. Seja cordial e educado.</li>
+                    </ul>
+                    <h4 class="text-lg font-bold mb-2 text-emerald-700">Seção 3: Cuidados com o Veículo, Limpeza e Organização</h4>
+                     <ul class="list-disc list-inside space-y-3 mb-6">
+                        <li><strong>Checklist de Verificação e Segurança do Veículo (Obrigatório no Início do Dia) (ATUALIZADO):</strong>
+                             <ul class="list-circle list-inside ml-4 mt-2">
+                                 <li>[ ] Nível dos pneus.</li>
+                                 <li>[ ] Funcionamento de faróis, setas e luz de freio.</li>
+                                 <li>[ ] Limpeza dos vidros e espelhos.</li>
+                                 <li>[ ] Nível do óleo do motor.</li>
+                                 <li>[ ] Nível da água do radiador.</li>
+                                 <li>[ ] Buzina.</li>
+                             </ul>
+                             <p class="ml-4">Reporte qualquer irregularidade ao seu supervisor antes de iniciar as atividades.</p>
+                        </li>
+                        <li><strong>Cuidado Geral e Manutenção Preventiva:</strong> Reporte imediatamente qualquer barulho estranho, luz de advertência no painel ou problema mecânico.</li>
+                        <li><strong>Protocolo de Limpeza e Higienização:</strong> Limpe imediatamente qualquer sujeira entre viagens. Realize uma limpeza diária ao final do expediente e uma limpeza semanal completa.</li>
+                        <li><strong>Limpeza e Organização da Vaga de Estacionamento:</strong> Garanta que a vaga designada para o veículo seja mantida limpa e livre de lixo ou detritos.</li>
+                     </ul>
+                    <h4 class="text-lg font-bold mb-2 text-emerald-700">Seção 4: Procedimentos em Emergências</h4>
+                     <ul class="list-disc list-inside space-y-3 mb-6">
+                        <li><strong>Comunicação com a Base:</strong> Mantenha contato constante com a recepção, informando sobre o status de cada serviço.</li>
+                        <li><strong>Emergência com o Animal:</strong> Se um animal passar mal, estacione em local seguro e ligue imediatamente para o seu supervisor.</li>
+                        <li><strong>Acidente de Trânsito:</strong> Priorize a segurança. Sinalize o local, verifique a condição do animal e contate seu supervisor e, se necessário, as autoridades.</li>
+                     </ul>
+                    <div class="mt-8 pt-4 border-t">
+                        <p class="font-semibold">Termo de Compromisso do Colaborador do Taxi Dog</p>
+                        <p class="mt-4">Eu, [Nome do Colaborador], CPF [Número do CPF], declaro que recebi, li, compreendi e concordo em seguir integralmente a "Política de Excelência e Segurança do Setor de Taxi Dog" do Empório Pet.</p>
+                        <p class="mt-2">Entendo a importância da minha função para a segurança dos pets e para a imagem da empresa, e me comprometo a cumprir todos os protocolos de segurança, condução, limpeza e manutenção aqui descritos.</p>
+                        <p class="mt-8">[Cidade], [Data].</p>
+                        <div class="mt-8 border-t border-gray-400 w-1/2"></div>
+                        <p class="mt-2">Assinatura do Colaborador</p>
+                    </div>`
+            }
+        };
+        // --- FIM: Conteúdo completo para os modais ---
+
+        // --- FORM TEMPLATE ---
+        const getFormHTML = (idPrefix = "") => `
+            <input type="hidden" id="${idPrefix}booking-id">
+            <div><label for="${idPrefix}tutor-name" class="block text-sm font-medium">Nome do Tutor</label><input type="text" id="${idPrefix}tutor-name" class="form-input" required></div>
+            <div><label for="${idPrefix}pet-name" class="block text-sm font-medium">Nome do Pet</label><input type="text" id="${idPrefix}pet-name" class="form-input" required></div>
+            <div><label for="${idPrefix}pet-breed" class="block text-sm font-medium">Raça do Pet</label><input type="text" id="${idPrefix}pet-breed" class="form-input" required></div>
+            <div id="${idPrefix}generic-date-container" class="space-y-2"><label for="${idPrefix}generic-date" class="block text-sm font-medium">Data do Agendamento</label><input type="datetime-local" id="${idPrefix}generic-date" class="form-input"></div>
+            <fieldset class="pt-2"><legend class="text-sm font-medium mb-2">Serviços Solicitados</legend><div class="space-y-2"><div class="flex items-center"><input type="checkbox" id="${idPrefix}service-package-creche" class="form-checkbox"> <label for="${idPrefix}service-package-creche" class="ml-2">Pacote de Creche</label></div><div class="flex items-center"><input type="checkbox" id="${idPrefix}service-creche" class="form-checkbox"> <label for="${idPrefix}service-creche" class="ml-2">Creche</label></div><div class="flex items-center"><input type="checkbox" id="${idPrefix}service-hotel" class="form-checkbox"> <label for="${idPrefix}service-hotel" class="ml-2">Hotel</label></div><div class="flex items-center"><input type="checkbox" id="${idPrefix}service-taxi" class="form-checkbox"> <label for="${idPrefix}service-taxi" class="ml-2">Taxi Dog</label></div></div></fieldset>
+            <div id="${idPrefix}hotel-details-container" class="hidden space-y-4 pt-2 border-t border-teal-500"><h3 class="font-semibold text-center">Detalhes da Hospedagem</h3><div><label for="${idPrefix}hotel-checkin-date" class="block text-sm font-medium">Check-in do Hotel</label><input type="datetime-local" id="${idPrefix}hotel-checkin-date" class="form-input"></div><div><label for="${idPrefix}hotel-checkout-date" class="block text-sm font-medium">Check-out do Hotel</label><input type="datetime-local" id="${idPrefix}hotel-checkout-date" class="form-input"></div><div class="flex items-center pl-2"><input type="checkbox" id="${idPrefix}service-bath" class="form-checkbox"> <label for="${idPrefix}service-bath" class="ml-2">Saída com Banho</label></div></div>
+            <div id="${idPrefix}package-calendar-container" class="hidden space-y-2 pt-2 border-t border-teal-500"><h3 class="font-semibold text-center">Selecione os Dias do Pacote</h3><div id="${idPrefix}calendar" class="bg-white/10 p-3 rounded-lg"></div></div>
+            <div id="${idPrefix}taxi-dog-details-container" class="hidden space-y-4 pt-2 border-t border-teal-500"><h3 class="font-semibold text-center">Detalhes do Taxi Dog</h3><div><label for="${idPrefix}taxi-pickup-time" class="block text-sm font-medium">Horário de Busca</label><input type="time" id="${idPrefix}taxi-pickup-time" class="form-input"></div><div><label for="${idPrefix}taxi-return-time" class="block text-sm font-medium">Horário de Devolução</label><input type="time" id="${idPrefix}taxi-return-time" class="form-input"></div><div><label for="${idPrefix}taxi-route" class="block text-sm font-medium">Rota</label><select id="${idPrefix}taxi-route" class="form-input form-select-dark-text" required><option value="">Selecione a rota</option><option value="Rota 1">Rota 1</option><option value="Rota 2">Rota 2</option><option value="Rota 3">Rota 3</option><option value="Rota 4">Rota 4</option><option value="Rota 5">Rota 5</option></select></div></div>
+            <div><label for="${idPrefix}observations" class="block text-sm font-medium">Observações</label><textarea id="${idPrefix}observations" rows="3" class="form-input"></textarea></div>
+            <div class="flex flex-col space-y-2 pt-4"><button type="submit" class="w-full bg-green-500 hover:bg-green-600 text-white font-bold py-3 px-4 rounded-lg transition-colors duration-300 shadow-md">Salvar</button></div>
+        `;
+        
+        // --- AUTHENTICATION & INITIALIZATION ---
+        onAuthStateChanged(auth, async (user) => {
+            if (user) {
+                userId = user.uid;
+                userIdDisplay.textContent = `ID do Usuário: ${userId}`;
+                appointmentsColRef = collection(db, `artifacts/${appId}/users/${userId}/appointments`);
+                listenForAppointments();
+            } else {
+                try {
+                    await (initialAuthToken ? signInWithCustomToken(auth, initialAuthToken) : signInAnonymously(auth));
+                } catch (error) { console.error("Authentication failed:", error); userIdDisplay.textContent = "Erro de autenticação."; }
+            }
+        });
+
+        function listenForAppointments() {
+            if (unsubscribeAppointments) unsubscribeAppointments();
+            if (!appointmentsColRef) return;
+            unsubscribeAppointments = onSnapshot(appointmentsColRef, (snapshot) => {
+                localAppointments = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                renderContent();
+            }, (error) => { console.error("Error fetching appointments:", error); contentDisplay.innerHTML = `<p class="text-red-500">Erro ao carregar agendamentos.</p>`; });
+        }
+        
+        const addStyles = () => {
+            const style = document.createElement('style');
+            style.textContent = `
+                .tab-btn { padding: 0.75rem 1rem; font-weight: 600; color: #047857; background-color: #d1fae5; border: 2px solid #a78bfa; border-radius: 0.5rem; transition: all 0.3s ease; }
+                .tab-btn:hover { background-color: #a7f3d0; transform: translateY(-2px); box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1); }
+                .tab-btn.active-tab { color: white; background-image: linear-gradient(to right, #047857, #0d9488); border-color: #6d28d9; box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1); }
+                .form-input, .form-select-dark-text { width: 100%; background-color: rgba(0, 0, 0, 0.1); border: 1px solid rgba(0, 0, 0, 0.3); border-radius: 0.5rem; padding: 0.75rem; color: #374151; transition: background-color 0.3s, border-color 0.3s; }
+                #booking-sidebar .form-input, #booking-sidebar .form-select-dark-text { color: #374151; background-color: #ffffff; border-color: #d1d5db; }
+                #booking-sidebar .form-input::placeholder { color: #9ca3af; }
+                #booking-sidebar label { color: white; }
+                .form-checkbox { width: 1.25rem; height: 1.25rem; border-radius: 0.25rem; border-color: rgba(255, 255, 255, 0.3); background-color: transparent; accent-color: #2dd4bf; }
+                #edit-form .form-checkbox { border-color: #9ca3af; }
+                .action-btn { font-family: 'Poppins', sans-serif; font-size: 0.7rem; color: white; padding: 0.375rem 0.75rem; border-radius: 0.5rem; transition: background-color 0.2s; }
+            `;
+            document.head.appendChild(style);
+        };
+        addStyles();
+
+        // --- INÍCIO: FUNÇÕES RESTAURADAS ---
+
+        function initializeFormLogic(prefix = "") {
+            const form = document.getElementById(prefix ? 'edit-form' : 'booking-form'); if (!form) return;
+            const hotelCheckbox = document.getElementById(`${prefix}service-hotel`), crecheCheckbox = document.getElementById(`${prefix}service-creche`), packageCrecheCheckbox = document.getElementById(`${prefix}service-package-creche`), taxiCheckbox = document.getElementById(`${prefix}service-taxi`);
+            const genericDateContainer = document.getElementById(`${prefix}generic-date-container`), hotelDetailsContainer = document.getElementById(`${prefix}hotel-details-container`), taxiDetailsContainer = document.getElementById(`${prefix}taxi-dog-details-container`), packageCalendarContainer = document.getElementById(`${prefix}package-calendar-container`);
+            const updateVisibility = () => {
+                const isHotel = hotelCheckbox.checked;
+                hotelDetailsContainer.classList.toggle('hidden', !isHotel);
+                taxiDetailsContainer.classList.toggle('hidden', !taxiCheckbox.checked);
+                genericDateContainer.classList.toggle('hidden', isHotel);
+                const taxiRoute = document.getElementById(`${prefix}taxi-route`);
+                if (taxiRoute) taxiRoute.required = taxiCheckbox.checked;
+            };
+            packageCrecheCheckbox.addEventListener('change', (e) => {
+                const isChecked = e.target.checked;
+                packageCalendarContainer.classList.toggle('hidden', !isChecked);
+                if (isChecked) { crecheCheckbox.checked = true; crecheCheckbox.disabled = true; renderCalendar(prefix); } 
+                else { crecheCheckbox.disabled = false; selectedPackageDates = []; }
+                updateVisibility();
+            });
+            crecheCheckbox.addEventListener('change', (e) => {
+                if (!e.target.checked && !packageCrecheCheckbox.disabled) { packageCrecheCheckbox.checked = false; packageCalendarContainer.classList.add('hidden'); selectedPackageDates = []; }
+                updateVisibility();
+            });
+            hotelCheckbox.addEventListener('change', updateVisibility);
+            taxiCheckbox.addEventListener('change', updateVisibility);
+            updateVisibility();
+        }
+
+        function createFilterHeader(type, counts = {}) {
+             const sidebarToggleHTML = currentTab === 'reception' ? `<button id="sidebar-toggle-btn" title="Ocultar/Mostrar Barra Lateral" class="p-2 rounded-md bg-purple-100 text-purple-700 hover:bg-purple-200"><i data-feather="${isSidebarVisible ? 'chevron-left' : 'chevron-right'}"></i></button>` : '';
+             const compactModeButtonHTML = `<button id="btn-toggle-compacto" class="action-btn bg-gray-500 hover:bg-gray-600">${isCompactMode ? 'Visão Padrão' : 'Modo Compacto'}</button>`;
+             let filterHTML = '';
+             let countersHTML = ''; 
+             
+             switch (type) {
+                case 'reception':
+                    return `<div class="border-b-2 pb-2">
+                                <div class="flex justify-between items-center flex-wrap gap-2">
+                                    <h2 class="text-2xl font-bold text-gray-800 flex items-center gap-2"><i data-feather="calendar" class="w-6 h-6"></i>Agendamentos do Dia</h2>
+                                    <div class="flex items-center gap-2">
+                                        ${compactModeButtonHTML}
+                                        ${sidebarToggleHTML}
+                                    </div>
+                                </div>
+                                <div class="my-4 flex flex-wrap justify-between items-center gap-4">
+                                    <div class="flex flex-wrap items-center gap-4">
+                                        <div class="flex items-center gap-2">
+                                            <label for="date-filter" class="font-semibold">Data:</label>
+                                            <input type="date" id="date-filter" value="${dateFilters.reception}" class="p-2 border rounded-md">
+                                        </div>
+                                        <div class="flex items-center gap-2">
+                                            <label for="service-filter" class="font-semibold">Serviço:</label>
+                                            <select id="service-filter" class="p-2 border rounded-md form-select-dark-text">
+                                                <option value="" ${currentServiceFilter === '' ? 'selected' : ''}>Todos</option>
+                                                <option value="Creche" ${currentServiceFilter === 'Creche' ? 'selected' : ''}>Creche</option>
+                                                <option value="Hotel" ${currentServiceFilter === 'Hotel' ? 'selected' : ''}>Hotel</option>
+                                                <option value="Taxi Dog" ${currentServiceFilter === 'Taxi Dog' ? 'selected' : ''}>Taxi Dog</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div id="reception-main-content"></div>
+                            </div>`;
+                case 'creche': 
+                    filterHTML = `<div><h2 class="text-2xl font-bold text-gray-800 flex items-center gap-2 mb-4"><i data-feather="sun" class="w-6 h-6"></i>Visão da Creche</h2><div class="flex flex-wrap items-center gap-4">
+                                    <div class="flex items-center gap-2"><label for="date-filter" class="font-semibold">Data:</label><input type="date" id="date-filter" value="${dateFilters[currentTab]}" class="p-2 border rounded-md"></div>
+                                    <div class="flex items-center gap-2"><label for="creche-status-filter" class="font-semibold">Status:</label><select id="creche-status-filter" class="p-2 border rounded-md form-select-dark-text"><option value="" ${currentCrecheStatusFilter === '' ? 'selected' : ''}>Todos</option><option value="Agendado" ${currentCrecheStatusFilter === 'Agendado' ? 'selected' : ''}>Agendado</option><option value="Presente" ${currentCrecheStatusFilter === 'Presente' ? 'selected' : ''}>Presente</option><option value="Ausente" ${currentCrecheStatusFilter === 'Ausente' ? 'selected' : ''}>Ausente</option><option value="Check-out/Finalizado" ${currentCrecheStatusFilter === 'Check-out/Finalizado' ? 'selected' : ''}>Saída</option></select></div>
+                                    ${compactModeButtonHTML}
+                                </div></div>`;
+                    if (counts.presentes !== undefined) countersHTML = `<div class="flex gap-x-6 gap-y-2 mt-4 flex-wrap"><div class="flex items-center gap-2 text-green-600"><i data-feather="sun" class="w-5 h-5"></i><span class="font-bold text-lg">${counts.presentes}</span><span class="text-sm">Presentes</span></div><div class="flex items-center gap-2 text-red-600"><i data-feather="cloud-off" class="w-5 h-5"></i><span class="font-bold text-lg">${counts.ausentes}</span><span class="text-sm">Ausentes</span></div><div class="flex items-center gap-2 text-purple-600"><i data-feather="arrow-down-circle" class="w-5 h-5"></i><span class="font-bold text-lg">${counts.saida}</span><span class="text-sm">Saída</span></div></div>`;
+                    return `<div class="flex flex-col"><div class="flex flex-wrap justify-between items-center gap-4">${filterHTML}</div>${countersHTML}</div>`;
+                case 'hotel':
+                    filterHTML = `<div><h2 class="text-2xl font-bold text-gray-800 flex items-center gap-2 mb-4"><i data-feather="moon" class="w-6 h-6"></i>Visão do Hotel</h2><div class="flex flex-wrap items-center gap-4">
+                                    <div class="flex items-center gap-2"><label for="date-filter" class="font-semibold">Data (Reservas/Saídas):</label><input type="date" id="date-filter" value="${dateFilters.hotel}" class="p-2 border rounded-md"></div>
+                                    <div class="flex items-center gap-2"><label for="hotel-status-filter" class="font-semibold">Status:</label><select id="hotel-status-filter" class="p-2 border rounded-md form-select-dark-text"><option value="Hospedado" ${currentHotelFilter === 'Hospedado' ? 'selected' : ''}>Hospedado (Atualmente)</option><option value="Agendado" ${currentHotelFilter === 'Agendado' ? 'selected' : ''}>Reserva (na data)</option><option value="Check-out/Finalizado" ${currentHotelFilter === 'Check-out/Finalizado' ? 'selected' : ''}>Saída (na data)</option></select></div>
+                                    ${compactModeButtonHTML}
+                                </div></div>`;
+                    if (counts.hospedados !== undefined) countersHTML = `<div class="flex gap-4 mt-2"><div class="flex items-center gap-2 text-cyan-600"><i data-feather="moon" class="w-5 h-5"></i><span class="font-bold text-lg">${counts.hospedados}</span><span class="text-sm">Hospedados</span></div></div>`;
+                    return `<div class="flex flex-col"><div class="flex flex-wrap justify-between items-center gap-4">${filterHTML}</div>${countersHTML}</div>`;
+                case 'taxi': 
+                    filterHTML = `<div><h2 class="text-2xl font-bold text-gray-800 flex items-center gap-2 mb-4"><i data-feather="truck" class="w-6 h-6"></i>Visão do Taxi Dog</h2><div class="flex flex-wrap items-center gap-4">
+                                    <div><label for="date-filter" class="font-semibold">Data:</label><input type="date" id="date-filter" value="${dateFilters.taxi}" class="p-2 border rounded-md"></div>
+                                    <div><label for="taxi-route-filter" class="font-semibold">Rota:</label><select id="taxi-route-filter" class="p-2 border rounded-md form-select-dark-text"><option value="" ${currentTaxiRouteFilter === '' ? 'selected' : ''}>Todas</option><option value="Rota 1" ${currentTaxiRouteFilter === 'Rota 1' ? 'selected' : ''}>Rota 1</option><option value="Rota 2" ${currentTaxiRouteFilter === 'Rota 2' ? 'selected' : ''}>Rota 2</option><option value="Rota 3" ${currentTaxiRouteFilter === 'Rota 3' ? 'selected' : ''}>Rota 3</option><option value="Rota 4" ${currentTaxiRouteFilter === 'Rota 4' ? 'selected' : ''}>Rota 4</option><option value="Rota 5" ${currentTaxiRouteFilter === 'Rota 5' ? 'selected' : ''}>Rota 5</option></select></div>
+                                    ${compactModeButtonHTML}
+                                </div></div>`; 
+                    return `<div class="mb-4 flex flex-wrap justify-between items-center gap-4">${filterHTML}</div>`;
+             }
+        }
+
+        function createAppointmentCard(appt) {
+            const { id, tutorName, petName, services = [], status = 'Agendado' } = appt;
+            const card = document.createElement('div');
+            card.dataset.id = id;
+            
+            const statusColors = { 'Agendado': 'bg-blue-100 text-blue-800', 'Presente': 'bg-green-200 text-green-800', 'Hospedado': 'bg-cyan-100 text-cyan-800', 'Ausente': 'bg-red-200 text-red-800', 'Check-out/Finalizado': 'bg-purple-100 text-purple-800' };
+            const cardStatusClass = status ? statusColors[status] : '';
+            
+            card.className = "appointment-card relative border rounded-lg p-4 shadow-md flex flex-col";
+            if(cardStatusClass) card.classList.add(...cardStatusClass.split(' '));
+            
+            let dateInfo = (services.includes('Hotel') && appt.hotelPeriodStart) ? `<p class="text-sm"><span class="font-semibold">Período:</span> ${formatDate(appt.hotelPeriodStart)} a ${formatDate(appt.hotelPeriodEnd)}</p><p class="text-sm"><span class="font-semibold">Data de Hoje:</span> ${formatDate(appt.checkinDate)}</p>` : `<p class="text-sm"><span class="font-semibold">Data:</span> ${formatDate(appt.checkinDate, true)}</p>`;
+            let taxiInfo = services.includes('Taxi Dog') && appt.taxiDetails ? `<div class="mt-2 pt-2 border-t"><p class="font-semibold text-teal-700">Taxi Dog: ${appt.taxiDetails.route || 'N/A'}</p><p class="text-xs">Busca: ${appt.taxiDetails.pickupTime || 'N/A'} | Devolução: ${appt.taxiDetails.returnTime || 'N/A'}</p></div>` : '';
+            
+            // INÍCIO: CORREÇÃO & CÓDIGO DEFENSIVO
+            card.innerHTML = `
+                <div class="card-header flex justify-between items-start">
+                    <div>
+                        <h3 class="text-lg font-bold">${petName || 'Pet sem Nome'}</h3>
+                        <p class="tutor-name text-sm text-gray-600 -mt-1">${tutorName || 'Tutor sem Nome'}</p>
+                    </div>
+                    <span class="text-xs font-semibold px-2 py-1 rounded-full ${statusColors[status] || ''}">${status}</span>
+                </div>
+                <div class="card-details">
+                    <div class="text-gray-700 space-y-1 my-2">
+                        ${dateInfo}
+                        <p class="font-semibold">Serviços:</p>
+                        <div class="flex flex-wrap gap-1 text-xs">${services.map(s => `<span class="bg-gray-200 px-2 py-1 rounded">${s}</span>`).join('')}</div>
+                    </div>
+                    ${taxiInfo}
+                    ${appt.observations ? `<p class="text-xs italic mt-2 whitespace-pre-wrap"><strong>Obs:</strong> <span>${appt.observations}</span></p>` : ''}
+                    <div class="mt-2 pt-2 border-t text-xs text-gray-500 bg-gray-50 p-2 rounded">
+                        <p>${appt.checkinTimestamp ? `<strong>Entrada:</strong> ${formatDate(appt.checkinTimestamp, true)}` : ''}</p>
+                        <p>${appt.checkoutTimestamp ? `<strong>Saída:</strong> ${formatDate(appt.checkoutTimestamp, true)}` : ''}</p>
+                    </div>
+                    <div class="botoes-porte"></div>
+                    <div class="action-buttons mt-4 pt-4 border-t flex flex-wrap gap-2 justify-end"></div>
+                </div>
+            `;
+            // FIM: CORREÇÃO & CÓDIGO DEFENSIVO
+            
+            const buttonContainer = card.querySelector('.action-buttons');
+            
+            if (currentTab === 'creche' || currentTab === 'hotel') {
+                const porteButtons = card.querySelector('.botoes-porte');
+                porteButtons.innerHTML = `<button class="btn-mover-porte" data-action="move_to_group" data-grupo="grandes" title="Mover para Porte Grande">G</button><button class="btn-mover-porte" data-action="move_to_group" data-grupo="pequenos" title="Mover para Porte Pequeno">P</button>`;
+            }
+            
+            if (currentTab === 'reception') {
+                const editButton = document.createElement('button');
+                editButton.className = "action-btn bg-yellow-500 hover:bg-yellow-600";
+                editButton.textContent = "Editar";
+                editButton.dataset.action = "edit";
+                buttonContainer.appendChild(editButton);
+            }
+
+            const isCrecheService = services.includes('Creche') || services.includes('Pacote de Creche');
+            if (status === 'Agendado') {
+                if (isCrecheService) {
+                    const presentButton = document.createElement('button'); presentButton.className = "action-btn bg-green-500 hover:bg-green-600"; presentButton.textContent = "Presente"; presentButton.dataset.action = 'present'; buttonContainer.appendChild(presentButton);
+                    const absentButton = document.createElement('button'); absentButton.className = "action-btn bg-gray-500 hover:bg-gray-600"; absentButton.textContent = "Ausente"; absentButton.dataset.action = 'absent'; buttonContainer.appendChild(absentButton);
+                }
+                if (services.includes('Hotel')) {
+                     const checkinHotelButton = document.createElement('button'); checkinHotelButton.className = "action-btn bg-blue-500 hover:bg-blue-600"; checkinHotelButton.textContent = "Entrada"; checkinHotelButton.dataset.action = 'checkin_hotel'; buttonContainer.appendChild(checkinHotelButton);
+                }
+            } else if (status === 'Presente' && isCrecheService) {
+                const markAbsentButton = document.createElement('button'); markAbsentButton.className = "action-btn bg-gray-500 hover:bg-gray-600"; markAbsentButton.textContent = "Marcar Ausente"; markAbsentButton.dataset.action = 'absent'; buttonContainer.appendChild(markAbsentButton);
+                const checkoutCrecheButton = document.createElement('button'); checkoutCrecheButton.className = "action-btn bg-purple-500 hover:bg-purple-600"; checkoutCrecheButton.textContent = "Saída"; checkoutCrecheButton.dataset.action = 'checkout_creche'; buttonContainer.appendChild(checkoutCrecheButton);
+            } else if (status === 'Ausente' && isCrecheService) {
+                 const markPresentButton = document.createElement('button'); markPresentButton.className = "action-btn bg-green-500 hover:bg-green-600"; markPresentButton.textContent = "Marcar Presente"; markPresentButton.dataset.action = 'present'; buttonContainer.appendChild(markPresentButton);
+            } else if (status === 'Hospedado') {
+                 const checkoutHotelButton = document.createElement('button'); checkoutHotelButton.className = "action-btn bg-purple-500 hover:bg-purple-600"; checkoutHotelButton.textContent = "Saída"; checkoutHotelButton.dataset.action = 'checkout_hotel'; buttonContainer.appendChild(checkoutHotelButton);
+            }
+
+            if (services.includes('Hotel')) {
+                const checklistButton = document.createElement('button'); checklistButton.className = "action-btn bg-teal-500 hover:bg-teal-600"; checklistButton.textContent = "Checklist"; checklistButton.dataset.action = 'checklist'; buttonContainer.appendChild(checklistButton);
+            }
+
+            if (currentTab === 'reception') {
+                const deleteButton = document.createElement('button'); deleteButton.className = "action-btn bg-red-500 hover:bg-red-600"; deleteButton.textContent = "Excluir"; deleteButton.dataset.action = 'delete'; buttonContainer.appendChild(deleteButton);
+            }
+
+            return card;
+        }
+
+        // --- FIM: FUNÇÕES RESTAURADAS ---
+
+        // --- Lógica de Troca de Abas com Senha ---
+        function performTabSwitch(newTab) {
+            currentTab = newTab;
+            tabButtons.forEach(btn => {
+                btn.classList.toggle('active-tab', btn.dataset.tab === newTab);
+            });
+            updateLayoutForTab();
+            renderContent();
+        }
+
+        tabButtons.forEach(button => {
+            button.addEventListener('click', () => {
+                const destinationTab = button.dataset.tab;
+                if (destinationTab === currentTab) return;
+                targetTabForPassword = destinationTab;
+                passwordError.textContent = '';
+                passwordInput.value = '';
+                passwordModal.classList.remove('hidden');
+                passwordInput.focus();
+            });
+        });
+        
+        passwordForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            if (passwordInput.value === TAB_PASSWORD) {
+                performTabSwitch(targetTabForPassword);
+                passwordModal.classList.add('hidden');
+                targetTabForPassword = null;
+            } else {
+                passwordError.textContent = 'Senha incorreta. Tente novamente.';
+                passwordInput.value = '';
+                passwordInput.focus();
+            }
+        });
+
+        passwordCancelBtn.addEventListener('click', () => {
+            passwordModal.classList.add('hidden');
+            targetTabForPassword = null;
+        });
+        
+        // --- UI & TAB LOGIC ---
+        function updateLayoutForTab() {
+            const isReception = currentTab === 'reception';
+            bookingSidebar.classList.toggle('hidden', !isReception);
+            if(isReception) {
+                toggleSidebar(isSidebarVisible); // Restore state
+            } else {
+                 contentArea.classList.add('w-full');
+                 contentArea.classList.remove('md:w-2/3', 'lg:w-3/4');
+            }
+            feather.replace();
+        }
+
+        function toggleSidebar(visible) {
+            isSidebarVisible = visible;
+            bookingSidebar.classList.toggle('hidden-sidebar', !isSidebarVisible);
+            const sidebarToggle = document.getElementById('sidebar-toggle-btn');
+            if (sidebarToggle) {
+                sidebarToggle.innerHTML = `<i data-feather="${isSidebarVisible ? 'chevron-left' : 'chevron-right'}"></i>`;
+                feather.replace();
+            }
+            updateContentAreaWidth();
+        }
+
+        function updateContentAreaWidth() {
+            if(currentTab === 'reception' && isSidebarVisible) {
+                contentArea.classList.add('md:w-2/3', 'lg:w-3/4');
+                contentArea.classList.remove('w-full');
+            } else {
+                contentArea.classList.remove('md:w-2/3', 'lg:w-3/4');
+                contentArea.classList.add('w-full');
+            }
+        }
+        
+        // --- CALENDAR LOGIC ---
+        function renderCalendar(prefix = "") {
+            const calendarEl = document.getElementById(`${prefix}calendar`); if (!calendarEl) return;
+            calendarEl.innerHTML = '';
+            const month = calendarDate.getMonth(), year = calendarDate.getFullYear();
+            const monthNames = ["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"];
+            const textColor = prefix ? 'text-gray-800' : 'text-white';
+            let header = document.createElement('div');
+            header.className = `flex items-center justify-between mb-2 ${textColor}`;
+            header.innerHTML = `<button type="button" id="${prefix}prev-month" class="p-1 rounded-full hover:bg-black/10">&lt;</button><span class="font-bold">${monthNames[month]} ${year}</span><button type="button" id="${prefix}next-month" class="p-1 rounded-full hover:bg-black/10">&gt;</button>`;
+            calendarEl.appendChild(header);
+            let grid = document.createElement('div');
+            grid.className = `grid grid-cols-7 gap-1 text-center text-sm ${textColor}`;
+            grid.innerHTML = ['D', 'S', 'T', 'Q', 'Q', 'S', 'S'].map(day => `<div class="font-bold text-teal-500">${day}</div>`).join('');
+            const firstDay = new Date(year, month, 1).getDay();
+            const daysInMonth = new Date(year, month + 1, 0).getDate();
+            for (let i = 0; i < firstDay; i++) grid.innerHTML += '<div></div>';
+            for (let i = 1; i <= daysInMonth; i++) {
+                const dayEl = document.createElement('button');
+                dayEl.type = 'button';
+                dayEl.textContent = i;
+                const dateString = `${year}-${String(month+1).padStart(2,'0')}-${String(i).padStart(2,'0')}`;
+                dayEl.className = 'p-1 calendar-day';
+                if (selectedPackageDates.includes(dateString)) dayEl.classList.add('selected');
+                dayEl.addEventListener('click', () => {
+                    const index = selectedPackageDates.indexOf(dateString);
+                    if (index > -1) selectedPackageDates.splice(index, 1);
+                    else selectedPackageDates.push(dateString);
+                    renderCalendar(prefix);
+                });
+                grid.appendChild(dayEl);
+            }
+            calendarEl.appendChild(grid);
+            document.getElementById(`${prefix}prev-month`).addEventListener('click', () => { calendarDate.setMonth(calendarDate.getMonth() - 1); renderCalendar(prefix); });
+            document.getElementById(`${prefix}next-month`).addEventListener('click', () => { calendarDate.setMonth(calendarDate.getMonth() + 1); renderCalendar(prefix); });
+        }
+        
+        // --- MAIN RENDER FUNCTION ---
+        function renderContent() {
+            if (!userId) return;
+            contentDisplay.innerHTML = '';
+            
+            contentDisplay.classList.toggle('modo-compacto', isCompactMode);
+            
+            let filteredAppointments = [];
+            let headerHTML = '';
+             switch (currentTab) {
+                case 'reception': headerHTML = createFilterHeader('reception'); filteredAppointments = filterReception(); break;
+                case 'creche': {
+                    const d = new Date(dateFilters.creche + 'T00:00:00');
+                    const s = toStartOfDay(d), e = toEndOfDay(d);
+                    const dailyCrecheAppointments = localAppointments.filter(a => (a.services.includes('Creche') || a.services.includes('Pacote de Creche')) && a.checkinDate?.toDate() >= s && a.checkinDate?.toDate() <= e );
+                    const presentesCount = dailyCrecheAppointments.filter(a => a.status === 'Presente').length;
+                    const ausentesCount = dailyCrecheAppointments.filter(a => a.status === 'Ausente').length;
+                    const saidaCount = dailyCrecheAppointments.filter(a => a.status === 'Check-out/Finalizado').length;
+                    headerHTML = createFilterHeader('creche', { presentes: presentesCount, ausentes: ausentesCount, saida: saidaCount });
+                    filteredAppointments = filterCreche();
+                    break;
+                }
+                case 'hotel': {
+                    filteredAppointments = filterHotel();
+                    const hospedadosCount = localAppointments.filter(a => a.status === 'Hospedado' && a.services.includes('Hotel')).length;
+                    headerHTML = createFilterHeader('hotel', { hospedados: hospedadosCount });
+                    break;
+                }
+                case 'taxi': headerHTML = createFilterHeader('taxi'); filteredAppointments = filterTaxi(); break;
+            }
+            contentDisplay.innerHTML += headerHTML;
+
+            if (currentTab === 'creche' || currentTab === 'hotel') {
+                const triageContainer = document.createElement('div');
+                triageContainer.id = "triage-container";
+                triageContainer.innerHTML = `<div class="area-contadores flex gap-x-6 gap-y-2 mt-4 mb-4 flex-wrap"><div class="flex items-center gap-2"><i data-feather="users" class="w-5 h-5"></i><strong>Geral: <span id="contador-geral">0</span></strong></div><div class="flex items-center gap-2"><span>Porte Grande: <span id="contador-grandes">0</span></span></div><div class="flex items-center gap-2"><span>Porte Pequeno: <span id="contador-pequenos">0</span></span></div></div><div id="area-geral" class="mb-6"><h2 class="w-full">Aguardando Classificação</h2><div class="card-grid"></div></div><div class="container-grupos"><div id="grupo-grandes" class="coluna-grupo"><h2>Porte Grande</h2><div class="card-grid"></div></div><div id="grupo-pequenos" class="coluna-grupo"><h2>Porte Pequeno</h2><div class="card-grid"></div></div></div>`;
+                contentDisplay.appendChild(triageContainer);
+                const areaGeralGrid = triageContainer.querySelector('#area-geral .card-grid');
+                const grupoGrandesGrid = triageContainer.querySelector('#grupo-grandes .card-grid');
+                const grupoPequenosGrid = triageContainer.querySelector('#grupo-pequenos .card-grid');
+
+                if(filteredAppointments.length > 0) {
+                     filteredAppointments.forEach(appt => {
+                        const cardElement = createAppointmentCard(appt);
+                        const assignedGroup = cardGroupAssignments[appt.id];
+                        if (assignedGroup === 'grandes') {
+                            grupoGrandesGrid.appendChild(cardElement);
+                        } else if (assignedGroup === 'pequenos') {
+                            grupoPequenosGrid.appendChild(cardElement);
+                        } else {
+                            areaGeralGrid.appendChild(cardElement);
+                        }
+                    });
+                } else {
+                     triageContainer.querySelector('#area-geral').innerHTML = `<h2 class="w-full">Aguardando Classificação</h2> <p class="col-span-full text-center text-gray-500 mt-8">Nenhum agendamento encontrado.</p>`;
+                }
+                atualizarContadores();
+            } else {
+                const listContainer = document.createElement('div');
+                listContainer.id = 'list-container';
+                 if (filteredAppointments.length > 0) {
+                    filteredAppointments.forEach(appt => {
+                        listContainer.appendChild(createAppointmentCard(appt));
+                    });
+                } else {
+                     listContainer.innerHTML = `<p class="col-span-full text-center text-gray-500 mt-8">Nenhum agendamento encontrado.</p>`;
+                }
+                const mainContentContainer = document.getElementById('reception-main-content') || contentDisplay;
+                if(mainContentContainer) mainContentContainer.appendChild(listContainer);
+            }
+            
+            const toolsAndPoliciesContainer = document.createElement('div');
+            toolsAndPoliciesContainer.className = 'mt-8 pt-4 border-t-2 border-gray-200';
+            
+            if(currentTab === 'reception'){
+                const historySection = document.createElement('section');
+                historySection.id = 'historico-servicos';
+                historySection.className = 'secao-filtros';
+                historySection.innerHTML = `<h2 class="flex items-center gap-2"><i data-feather="archive" class="w-6 h-6"></i>Histórico de Serviço</h2><div class="controles-filtro"><div class="filtro-item"><label for="filtro-data-historico">Filtrar por Data:</label><input type="date" id="filtro-data-historico"></div><div class="filtro-item"><label for="busca-nome-historico">Buscar por Nome:</label><input type="search" id="busca-nome-historico" placeholder="Digite o nome do Pet ou Tutor..."></div></div><div id="historico-list-container"><p class="text-gray-500 col-span-full">Use os filtros acima para buscar no histórico.</p></div>`;
+                toolsAndPoliciesContainer.appendChild(historySection);
+            }
+
+            const policyButtonsContainer = document.createElement('div');
+            policyButtonsContainer.className = 'mt-8 pt-4 border-t-2 border-gray-200';
+            let buttonsHTML = '';
+            
+            if(currentTab === 'reception') {
+                 buttonsHTML = `<button data-action="open_content" data-content-key="politicaRecepcao" class="action-btn bg-blue-500 hover:bg-blue-600 text-base px-6 py-2">Política da Recepção</button>`;
+            } else if (currentTab === 'creche') {
+                 buttonsHTML = `<button data-action="open_content" data-content-key="listaAtividades" class="action-btn bg-blue-500 hover:bg-blue-600 text-base px-6 py-2">Enciclopédia de Atividades</button><button data-action="open_content" data-content-key="rotinasEquipe" class="action-btn bg-indigo-500 hover:bg-indigo-600 text-base px-6 py-2">Rotinas e Equipe</button><button data-action="open_content" data-content-key="crechePolicy" class="action-btn bg-purple-500 hover:bg-purple-600 text-base px-6 py-2">Política De Creche e Hotel</button>`;
+            } else if (currentTab === 'hotel') {
+                buttonsHTML = `<button data-action="open_content" data-content-key="crechePolicy" class="action-btn bg-purple-500 hover:bg-purple-600 text-base px-6 py-2">Política De Creche e Hotel</button>`;
+            } else if (currentTab === 'taxi') {
+                buttonsHTML = `<button data-action="open_content" data-content-key="taxiPolicy" class="action-btn bg-green-500 hover:bg-green-600 text-base px-6 py-2">Política de Taxi Dog</button>`;
+            }
+
+            policyButtonsContainer.innerHTML = `<h2 class="text-2xl font-bold text-gray-800 mb-4">Ferramentas e Políticas</h2><div class="flex gap-4 flex-wrap">${buttonsHTML}</div>`;
+            
+            contentDisplay.appendChild(toolsAndPoliciesContainer);
+            contentDisplay.appendChild(policyButtonsContainer);
+
+            addFilterEventListeners();
+            feather.replace();
+        }
+
+        // --- FILTERING LOGIC ---
+        const toStartOfDay = (date) => new Date(date.getFullYear(), date.getMonth(), date.getDate());
+        const toEndOfDay = (date) => new Date(date.getFullYear(), date.getMonth(), date.getDate(), 23, 59, 59, 999);
+        function filterReception() {
+             const d = new Date(dateFilters.reception + 'T00:00:00'), s = toStartOfDay(d), e = toEndOfDay(d); 
+             let filtered = localAppointments.filter(a => a.checkinDate?.toDate() >= s && a.checkinDate?.toDate() <= e);
+             if (currentServiceFilter) {
+                 filtered = filtered.filter(a => a.services.includes(currentServiceFilter));
+             }
+             return filtered.sort((a, b) => a.checkinDate.toDate() - b.checkinDate.toDate());
+        }
+        function filterCreche() { 
+            const d = new Date(dateFilters.creche + 'T00:00:00'), s = toStartOfDay(d), e = toEndOfDay(d); 
+            let filtered = localAppointments.filter(a => (a.services.includes('Creche') || a.services.includes('Pacote de Creche')) && a.checkinDate?.toDate() >= s && a.checkinDate?.toDate() <= e);
+            if (currentCrecheStatusFilter) {
+                filtered = filtered.filter(a => a.status === currentCrecheStatusFilter);
+            }
+            return filtered.sort((a, b) => a.petName.localeCompare(b.petName));
+        }
+        function filterHotel() {
+            let allHotelAppointments = localAppointments.filter(a => a.services.includes('Hotel'));
+            let filtered;
+
+            if (currentHotelFilter === 'Hospedado') {
+                filtered = allHotelAppointments.filter(a => a.status === 'Hospedado');
+            } else {
+                const d = new Date(dateFilters.hotel + 'T00:00:00');
+                const s = toStartOfDay(d);
+                const e = toEndOfDay(d);
+                
+                filtered = allHotelAppointments.filter(a => {
+                    const checkinDate = a.checkinDate?.toDate();
+                    return a.status === currentHotelFilter && checkinDate && checkinDate >= s && checkinDate <= e;
+                });
+            }
+            return filtered.sort((a, b) => a.petName.localeCompare(b.petName));
+        }
+        function filterTaxi() { 
+            const d = new Date(dateFilters.taxi + 'T00:00:00'), s = toStartOfDay(d), e = toEndOfDay(d); 
+            let f = localAppointments.filter(a => a.services.includes('Taxi Dog') && a.checkinDate?.toDate() >= s && a.checkinDate?.toDate() <= e); 
+            if (currentTaxiRouteFilter) f = f.filter(a => a.taxiDetails?.route === currentTaxiRouteFilter); 
+            return f.sort((a, b) => (a.taxiDetails?.pickupTime || '').localeCompare(b.taxiDetails?.pickupTime || ''));
+        }
+
+        // --- UI & HELPERS ---
+        function addFilterEventListeners() {
+            const dateFilter = document.getElementById('date-filter'); if (dateFilter) dateFilter.addEventListener('change', (e) => { dateFilters[currentTab] = e.target.value; renderContent(); });
+            const hotelFilter = document.getElementById('hotel-status-filter'); if (hotelFilter) hotelFilter.addEventListener('change', (e) => { currentHotelFilter = e.target.value; renderContent(); });
+            const taxiFilter = document.getElementById('taxi-route-filter'); if (taxiFilter) taxiFilter.addEventListener('change', (e) => { currentTaxiRouteFilter = e.target.value; renderContent(); });
+            const serviceFilter = document.getElementById('service-filter'); if (serviceFilter) serviceFilter.addEventListener('change', (e) => { currentServiceFilter = e.target.value; renderContent(); });
+            const crecheStatusFilter = document.getElementById('creche-status-filter'); if (crecheStatusFilter) crecheStatusFilter.addEventListener('change', (e) => { currentCrecheStatusFilter = e.target.value; renderContent(); });
+            const sidebarToggle = document.getElementById('sidebar-toggle-btn'); if (sidebarToggle) sidebarToggle.addEventListener('click', () => toggleSidebar(!isSidebarVisible));
+            
+            const historyDate = document.getElementById('filtro-data-historico');
+            const historySearch = document.getElementById('busca-nome-historico');
+            if(historyDate) historyDate.addEventListener('change', handleHistoryFilterChange);
+            if(historySearch) historySearch.addEventListener('input', handleHistoryFilterChange);
+        }
+        function formatDate(ts, time) { if (!ts) return 'N/A'; const d = ts.toDate(), o = { day: '2-digit', month: '2-digit', year: 'numeric' }; if (time) { o.hour = '2-digit'; o.minute = '2-digit'; } return d.toLocaleString('pt-BR', o); }
+        
+        // --- FORM SUBMISSION LOGIC ---
+        async function handleFormSubmit(e, prefix = "") {
+            e.preventDefault(); if (!userId) return showConfirmationModal("Erro", "Usuário não autenticado.", null, true);
+            const id = document.getElementById(`${prefix}booking-id`).value;
+            const services = [];
+            if (document.getElementById(`${prefix}service-creche`).checked) services.push('Creche'); if (document.getElementById(`${prefix}service-hotel`).checked) services.push('Hotel'); if (document.getElementById(`${prefix}service-bath`).checked) services.push('Saida com Banho'); if (document.getElementById(`${prefix}service-taxi`).checked) services.push('Taxi Dog'); if (document.getElementById(`${prefix}service-package-creche`).checked) services.push('Pacote de Creche');
+            const baseData = { tutorName: document.getElementById(`${prefix}tutor-name`).value, petName: document.getElementById(`${prefix}pet-name`).value, petBreed: document.getElementById(`${prefix}pet-breed`).value, services, observations: document.getElementById(`${prefix}observations`).value || null };
+            
+            if (services.includes('Taxi Dog')) { 
+                baseData.taxiDetails = { pickupTime: document.getElementById(`${prefix}taxi-pickup-time`).value || null, returnTime: document.getElementById(`${prefix}taxi-return-time`).value || null, route: document.getElementById(`${prefix}taxi-route`).value || null }; 
+                if (!baseData.taxiDetails.route) return showConfirmationModal("Erro", "A seleção da rota é obrigatória para o serviço de Taxi Dog.", null, true);
+            }
+            
+            try {
+                if (id) {
+                    let checkinDate, checkoutDate = null;
+                     if (services.includes('Hotel')) {
+                        const hotelCheckinValue = document.getElementById(`${prefix}hotel-checkin-date`).value; const hotelCheckoutValue = document.getElementById(`${prefix}hotel-checkout-date`).value;
+                        if (!hotelCheckinValue || !hotelCheckoutValue) return showConfirmationModal("Erro", "Datas de check-in e check-out do hotel são obrigatórias.", null, true);
+                        checkinDate = Timestamp.fromDate(new Date(hotelCheckinValue)); checkoutDate = Timestamp.fromDate(new Date(hotelCheckoutValue));
+                    } else {
+                        const genericDateValue = document.getElementById(`${prefix}generic-date`).value;
+                        if(genericDateValue) checkinDate = Timestamp.fromDate(new Date(genericDateValue));
+                    }
+                    await updateDoc(doc(db, `artifacts/${appId}/users/${userId}/appointments`, id), { ...baseData, checkinDate, checkoutDate, hotelPeriodStart: checkinDate, hotelPeriodEnd: checkoutDate });
+                    editModal.classList.add('hidden');
+                } else {
+                    const batch = writeBatch(db);
+                    if (services.includes('Hotel')) {
+                        const hotelCheckinValue = document.getElementById(`${prefix}hotel-checkin-date`).value; const hotelCheckoutValue = document.getElementById(`${prefix}hotel-checkout-date`).value;
+                        if (!hotelCheckinValue || !hotelCheckoutValue) return showConfirmationModal("Erro", "Datas de check-in e check-out do hotel são obrigatórias.", null, true);
+                        const startDate = new Date(hotelCheckinValue); const endDate = new Date(hotelCheckoutValue);
+                        const hotelPeriodStart = Timestamp.fromDate(startDate); const hotelPeriodEnd = Timestamp.fromDate(endDate);
+                        const bookingGroupId = crypto.randomUUID();
+                        for (let d = new Date(startDate); d <= endDate; d.setDate(d.getDate() + 1)) {
+                            const newDocRef = doc(appointmentsColRef);
+                            const appointmentData = { ...baseData, checkinDate: Timestamp.fromDate(new Date(d)), bookingGroupId, hotelPeriodStart, hotelPeriodEnd, status: 'Agendado', createdAt: serverTimestamp() };
+                            batch.set(newDocRef, appointmentData);
+                        }
+                    } else if (document.getElementById(`${prefix}service-package-creche`).checked && selectedPackageDates.length > 0) {
+                        const timePart = document.getElementById(`${prefix}generic-date`).value?.split('T')[1] || '09:00';
+                        selectedPackageDates.forEach(dateString => {
+                            const newDocRef = doc(appointmentsColRef);
+                            const appointmentData = { ...baseData, checkinDate: Timestamp.fromDate(new Date(`${dateString}T${timePart}`)), status: 'Agendado', createdAt: serverTimestamp() };
+                            batch.set(newDocRef, appointmentData);
+                        });
+                    } else {
+                        const genericDateValue = document.getElementById(`${prefix}generic-date`).value;
+                        if (!genericDateValue) return showConfirmationModal("Erro", "A data do agendamento é obrigatória.", null, true);
+                        const checkinDate = Timestamp.fromDate(new Date(genericDateValue));
+                        await addDoc(appointmentsColRef, { ...baseData, checkinDate, checkoutDate: null, status: 'Agendado', createdAt: serverTimestamp() });
+                        resetForm(); return;
+                    }
+                    await batch.commit();
+                    resetForm();
+                }
+            } catch (error) { console.error("Error saving document: ", error); showConfirmationModal("Erro", "Ocorreu um erro ao salvar.", null, true); }
+        }
+        bookingForm.addEventListener('submit', (e) => handleFormSubmit(e, ''));
+        editForm.addEventListener('submit', (e) => handleFormSubmit(e, 'edit-'));
+        function resetForm() { bookingForm.innerHTML = getFormHTML(''); initializeFormLogic(''); selectedPackageDates = []; }
+
+        // --- GLOBAL EVENT LISTENER ---
+        document.addEventListener('click', (e) => {
+            const actionTarget = e.target.closest('[data-action]');
+            
+            if (actionTarget && actionTarget.dataset.action === 'open_content') {
+                e.preventDefault();
+                openContentModal(actionTarget.dataset.contentKey);
+                return;
+            }
+
+            const cardTarget = e.target.closest('.appointment-card');
+            if (cardTarget && isCompactMode) {
+                 const currentExpanded = document.querySelector('.appointment-card.expandido');
+                 if (currentExpanded && currentExpanded !== cardTarget) {
+                     currentExpanded.classList.remove('expandido');
+                 }
+                 cardTarget.classList.toggle('expandido');
+            }
+
+            const toggleCompactBtn = e.target.closest('#btn-toggle-compacto');
+            if (toggleCompactBtn) {
+                isCompactMode = !isCompactMode;
+                toggleCompactBtn.textContent = isCompactMode ? 'Visão Padrão' : 'Modo Compacto';
+                contentDisplay.classList.toggle('modo-compacto', isCompactMode);
+                if (!isCompactMode) {
+                    document.querySelectorAll('.appointment-card.expandido').forEach(card => card.classList.remove('expandido'));
+                }
+                return;
+            }
+
+            if (actionTarget) {
+                e.stopPropagation(); 
+                const action = actionTarget.dataset.action;
+                const card = actionTarget.closest('[data-id]');
+                const id = card ? card.dataset.id : null;
+                
+                if (action === 'move_to_group') {
+                    const grupo = actionTarget.dataset.grupo;
+                    if(id) {
+                        cardGroupAssignments[id] = grupo;
+                        renderContent();
+                    }
+                    return;
+                }
+
+                switch(action) {
+                    case 'edit': if(id) openEditModal(id); break;
+                    case 'delete': if(id) showConfirmationModal('Confirmar Exclusão', 'Tem certeza?', () => deleteAppointment(id)); break;
+                    case 'present': if(id) updateAppointmentStatus(id, 'Presente'); break;
+                    case 'absent': if(id) updateAppointmentStatus(id, 'Ausente'); break;
+                    case 'checkin_hotel': if(id) batchUpdateHotelStatus(id, 'Hospedado'); break;
+                    case 'checkout_hotel': if(id) batchUpdateHotelCheckout(id); break;
+                    case 'checkout_creche': if(id) updateAppointmentStatus(id, 'Check-out/Finalizado'); break;
+                    case 'checklist': if(id) openChecklistModal(id); break;
+                }
+            }
+        });
+        
+        function atualizarContadores() {
+            const grupoGrandes = document.getElementById('grupo-grandes');
+            const grupoPequenos = document.getElementById('grupo-pequenos');
+            const contadorGrandes = document.getElementById('contador-grandes');
+            const contadorPequenos = document.getElementById('contador-pequenos');
+            const contadorGeral = document.getElementById('contador-geral');
+            if (grupoGrandes && grupoPequenos && contadorGrandes && contadorPequenos && contadorGeral) {
+                const numGrandes = grupoGrandes.querySelectorAll('.appointment-card').length;
+                const numPequenos = grupoPequenos.querySelectorAll('.appointment-card').length;
+                contadorGrandes.textContent = numGrandes;
+                contadorPequenos.textContent = numPequenos;
+                contadorGeral.textContent = numGrandes + numPequenos;
+            }
+        }
+
+        // --- LÓGICA DO HISTÓRICO ---
+        function handleHistoryFilterChange() {
+            const dateValue = document.getElementById('filtro-data-historico').value;
+            const searchValue = document.getElementById('busca-nome-historico').value.toLowerCase();
+            
+            if (!dateValue && !searchValue) {
+                renderHistoryResults([], true); // Limpa e mostra mensagem inicial
+                return;
+            }
+
+            let results = localAppointments;
+
+            if (dateValue) {
+                const d = new Date(dateValue + 'T00:00:00');
+                const s = toStartOfDay(d);
+                const e = toEndOfDay(d);
+                results = results.filter(a => {
+                    const checkinDate = a.checkinDate?.toDate();
+                    return checkinDate && checkinDate >= s && checkinDate <= e;
+                });
+            }
+
+            if (searchValue) {
+                results = results.filter(a => 
+                    (a.petName?.toLowerCase() || '').includes(searchValue) ||
+                    (a.tutorName?.toLowerCase() || '').includes(searchValue)
+                );
+            }
+
+            renderHistoryResults(results, false);
+        }
+
+        function renderHistoryResults(appointments, isInitial) {
+            const container = document.getElementById('historico-list-container');
+            if (!container) return;
+
+            container.innerHTML = '';
+            if (isInitial) {
+                container.innerHTML = `<p class="text-gray-500 col-span-full">Use os filtros acima para buscar no histórico.</p>`;
+                return;
+            }
+            
+            if (appointments.length === 0) {
+                container.innerHTML = `<p class="text-gray-500 col-span-full">Nenhum resultado encontrado para os filtros aplicados.</p>`;
+                return;
+            }
+
+            appointments.forEach(appt => {
+                container.appendChild(createAppointmentCard(appt));
+            });
+            feather.replace();
+        }
+        
+        function openEditModal(id) {
+            const appt = localAppointments.find(a => a.id === id); if (!appt) return;
+            editForm.innerHTML = getFormHTML('edit-'); const prefix = 'edit-';
+            document.getElementById(`${prefix}booking-id`).value = appt.id;
+            document.getElementById(`${prefix}tutor-name`).value = appt.tutorName || '';
+            document.getElementById(`${prefix}pet-name`).value = appt.petName || '';
+            document.getElementById(`${prefix}pet-breed`).value = appt.petBreed || '';
+            document.getElementById(`${prefix}observations`).value = appt.observations || '';
+            const toLocalISOString = (ts) => ts ? new Date(ts.toDate().getTime() - (ts.toDate().getTimezoneOffset() * 60000)).toISOString().slice(0, 16) : '';
+            (appt.services || []).forEach(s => { const cbId = { 'Creche': 'service-creche', 'Hotel': 'service-hotel', 'Saida com Banho': 'service-bath', 'Taxi Dog': 'service-taxi', 'Pacote de Creche': 'service-package-creche' }[s]; if (cbId) document.getElementById(`${prefix}${cbId}`).checked = true; });
+            initializeFormLogic(prefix);
+            if ((appt.services || []).includes('Hotel')) {
+                document.getElementById(`${prefix}hotel-checkin-date`).value = toLocalISOString(appt.hotelPeriodStart || appt.checkinDate);
+                document.getElementById(`${prefix}hotel-checkout-date`).value = toLocalISOString(appt.hotelPeriodEnd || appt.checkoutDate);
+            } else { document.getElementById(`${prefix}generic-date`).value = toLocalISOString(appt.checkinDate); }
+            if ((appt.services || []).includes('Taxi Dog') && appt.taxiDetails) {
+                 document.getElementById(`${prefix}taxi-pickup-time`).value = appt.taxiDetails.pickupTime || '';
+                 document.getElementById(`${prefix}taxi-return-time`).value = appt.taxiDetails.returnTime || '';
+                 document.getElementById(`${prefix}taxi-route`).value = appt.taxiDetails.route || '';
+            }
+            document.getElementById(`${prefix}service-package-creche`).disabled = true;
+            editModal.classList.remove('hidden');
+        }
+        function openChecklistModal(id) {
+            const appt = localAppointments.find(a => a.id === id); if (!appt) return;
+            checklistForm.dataset.id = id;
+
+            checklistInfo.innerHTML = `
+                <div class="text-center mb-4"><p class="text-sm text-gray-500">Período da Hospedagem</p><p class="font-semibold">${formatDate(appt.hotelPeriodStart)} a ${formatDate(appt.hotelPeriodEnd)}</p></div>
+                <div class="grid grid-cols-3 gap-4 text-center"><div><p class="text-sm text-gray-500">Nome do Pet</p><p class="font-bold text-lg">${appt.petName}</p></div><div><p class="text-sm text-gray-500">Tutor</p><p class="font-bold text-lg">${appt.tutorName}</p></div><div><p class="text-sm text-gray-500">Raça</p><p class="font-bold text-lg">${appt.petBreed}</p></div></div>`;
+            
+            const items = ["Cama", "Casinha", "Cobertor", "Brinquedos", "Ração", "Coleira", "Petiscos", "Roupinhas", "Comedouro", "Medicamentos", "Instagram", "Contato"];
+            checklistItemsContainer.innerHTML = items.map(item => {
+                const sanitizedItem = item.toLowerCase().replace(/\s+/g, '-');
+                const savedItem = appt.checklist ? appt.checklist[sanitizedItem] : null;
+                const isYes = savedItem ? savedItem.has : false;
+                const obs = savedItem ? savedItem.obs : '';
+                return `<div class="grid grid-cols-1 sm:grid-cols-3 items-center gap-2 border-t pt-4"><label class="font-semibold">${item}</label><div class="flex items-center gap-4"><label><input type="radio" name="${sanitizedItem}" value="sim" ${isYes ? 'checked' : ''}> Sim</label><label><input type="radio" name="${sanitizedItem}" value="nao" ${!isYes ? 'checked' : ''}> Não</label></div><textarea name="${sanitizedItem}-obs" placeholder="Observações..." class="form-input text-sm p-2 h-12">${obs}</textarea></div>`;
+            }).join('');
+            
+            document.getElementById('observacoes-gerais').value = appt.checklist?.observacoesGerais || '';
+            checklistModal.classList.remove('hidden');
+        }
+        
+        async function deleteAppointment(id) { try { await deleteDoc(doc(db, `artifacts/${appId}/users/${userId}/appointments`, id)); } catch (error) { console.error("Error deleting document: ", error); showConfirmationModal("Erro", "Não foi possível excluir.", null, true); } }
+        async function batchUpdateHotelStatus(clickedApptId, newStatus) {
+            const clickedAppt = localAppointments.find(a => a.id === clickedApptId); if (!clickedAppt || !clickedAppt.bookingGroupId) { updateAppointmentStatus(clickedApptId, newStatus); return; }
+            const batch = writeBatch(db);
+            const relatedAppointments = localAppointments.filter(a => a.bookingGroupId === clickedAppt.bookingGroupId);
+            const timestamp = serverTimestamp();
+            relatedAppointments.forEach(appt => { const docRef = doc(db, `artifacts/${appId}/users/${userId}/appointments`, appt.id); batch.update(docRef, { status: newStatus, checkinTimestamp: timestamp }); });
+            try { await batch.commit(); } catch (error) { console.error("Error batch updating status: ", error); showConfirmationModal("Erro", "Não foi possível atualizar o status do hotel.", null, true); }
+        }
+        async function batchUpdateHotelCheckout(clickedApptId) {
+            const clickedAppt = localAppointments.find(a => a.id === clickedApptId); if (!clickedAppt || !clickedAppt.bookingGroupId) { updateAppointmentStatus(clickedApptId, 'Check-out/Finalizado'); return; }
+            const batch = writeBatch(db);
+            const relatedAppointments = localAppointments.filter(a => a.bookingGroupId === clickedAppt.bookingGroupId);
+            const actualCheckoutDate = clickedAppt.checkinDate.toDate();
+            const timestamp = serverTimestamp();
+            relatedAppointments.forEach(appt => {
+                const docRef = doc(db, `artifacts/${appId}/users/${userId}/appointments`, appt.id);
+                const apptDate = appt.checkinDate.toDate();
+                if (apptDate > actualCheckoutDate) { batch.delete(docRef); } else if (appt.status !== 'Check-out/Finalizado') { batch.update(docRef, { status: 'Check-out/Finalizado', checkoutTimestamp: timestamp }); }
+            });
+            try { await batch.commit(); } catch (error) { console.error("Error batch updating checkout status: ", error); showConfirmationModal("Erro", "Não foi possível finalizar a estadia do hotel.", null, true); }
+        }
+        async function updateAppointmentStatus(id, newStatus) {
+            try {
+                const docRef = doc(db, `artifacts/${appId}/users/${userId}/appointments`, id);
+                const dataToUpdate = { status: newStatus };
+                if (newStatus === 'Presente' || newStatus === 'Hospedado') dataToUpdate.checkinTimestamp = serverTimestamp();
+                else if (newStatus === 'Check-out/Finalizado') dataToUpdate.checkoutTimestamp = serverTimestamp();
+                else if (newStatus === 'Agendado') dataToUpdate.checkinTimestamp = null;
+                await updateDoc(docRef, dataToUpdate);
+            } catch (error) { console.error("Error updating status: ", error); showConfirmationModal("Erro", "Não foi possível atualizar o status.", null, true); }
+        }
+
+        checklistForm.addEventListener('submit', async (e) => {
+            e.preventDefault(); const id = e.target.dataset.id; if (!id) return;
+            const formData = new FormData(e.target);
+            const checklistData = {};
+            const items = ["Cama", "Casinha", "Cobertor", "Brinquedos", "Ração", "Coleira", "Petiscos", "Roupinhas", "Comedouro", "Medicamentos", "Instagram", "Contato"];
+            items.forEach(item => { const sanitizedItem = item.toLowerCase().replace(/\s+/g, '-'); checklistData[sanitizedItem] = { has: formData.get(sanitizedItem) === 'sim', obs: formData.get(`${sanitizedItem}-obs`) || '' }; });
+            checklistData.observacoesGerais = formData.get('observacoes-gerais') || '';
+            try { const docRef = doc(db, `artifacts/${appId}/users/${userId}/appointments`, id); await updateDoc(docRef, { checklist: checklistData }); checklistModal.classList.add('hidden'); } catch (error) { console.error("Error saving checklist:", error); showConfirmationModal("Erro", "Não foi possível salvar o checklist.", null, true); }
+        });
+        function printChecklist() {
+            const printableContent = document.getElementById('printable-checklist').innerHTML;
+            const printWindow = window.open('', '', 'height=800,width=800');
+            printWindow.document.write(`<html><head><title>Checklist de Hospedagem</title><script src="https://cdn.tailwindcss.com"><\/script><style>@media print { body { font-size: 10pt; -webkit-print-color-adjust: exact; print-color-adjust: exact; } .no-print { display: none !important; } form { display: block !important; } textarea { border: 1px solid #ccc !important; } }</style></head><body>${printableContent}</body></html>`);
+            printWindow.document.close();
+            setTimeout(() => { printWindow.print(); printWindow.close(); }, 500);
+        }
+
+        // --- Lógica do Modal Genérico ---
+        function openContentModal(contentKey) {
+            const data = bancoDeConteudos[contentKey];
+            if (!data) {
+                console.error("Conteúdo não encontrado para a chave:", contentKey);
+                return;
+            }
+            genericModalTitle.textContent = data.titulo;
+            genericModalContent.innerHTML = data.html;
+            genericContentModal.classList.remove('hidden');
+        }
+        
+        // --- MODAL CONTROLS ---
+        closeEditModalBtn.addEventListener('click', () => editModal.classList.add('hidden'));
+        closeChecklistModalBtn.addEventListener('click', () => checklistModal.classList.add('hidden'));
+        closeGenericModalBtn.addEventListener('click', () => genericContentModal.classList.add('hidden'));
+        checklistModal.addEventListener('click', (e) => { if (e.target.id === 'print-checklist-btn') printChecklist(); });
+
+        let confirmCallback = null;
+        function showConfirmationModal(title, message, callback, isError = false) {
+            modalTitle.textContent = title; modalMessage.textContent = message;
+            confirmCallback = callback;
+            modalConfirmBtn.classList.toggle('hidden', isError);
+            modalCancelBtn.textContent = isError ? 'Fechar' : 'Cancelar';
+            confirmationModal.classList.remove('hidden');
+        }
+        modalConfirmBtn.addEventListener('click', () => { if (typeof confirmCallback === 'function') confirmCallback(); confirmationModal.classList.add('hidden'); });
+        modalCancelBtn.addEventListener('click', () => { confirmationModal.classList.add('hidden'); });
+
+        // --- INITIAL SETUP ---
+        bookingForm.innerHTML = getFormHTML('');
+        initializeFormLogic('');
+        performTabSwitch('reception'); // Inicia na aba de recepção por padrão
+        feather.replace();
+
+    </script>
+</body>
+</html>
