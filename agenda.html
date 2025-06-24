@@ -404,23 +404,16 @@
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, doc, collection, onSnapshot, addDoc, updateDoc, deleteDoc, Timestamp, serverTimestamp, writeBatch } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
         
-        // --- CONFIGURAÇÃO PARA DEPLOYMENT ---
-        const appId = 'petshop-agenda-prod'; 
-
-        const firebaseConfig = {
-          apiKey: "AIzaSyCFbwPsOyYD3HtSegk0j0zDGGOcjnc1Zn4",
-          authDomain: "creche-14172.firebaseapp.com",
-          projectId: "creche-14172",
-          storageBucket: "creche-14172.appspot.com",
-          messagingSenderId: "495724593146",
-          appId: "1:495724593146:web:74c18a306d8de607a66e43",
-          measurementId: "G-0MVHX1PXE4"
+        // --- CONFIG & INITIALIZATION ---
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'petshop-agenda-dev';
+        const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {
+            apiKey: "YOUR_API_KEY", authDomain: "YOUR_AUTH_DOMAIN", projectId: "YOUR_PROJECT_ID",
+            storageBucket: "YOUR_STORAGE_BUCKET", messagingSenderId: "YOUR_MESSAGING_SENDER_ID", appId: "YOUR_APP_ID"
         };
-        // --- FIM DA CONFIGURAÇÃO ---
-
+        const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
         const auth = getAuth(app);
@@ -475,18 +468,22 @@
        
         // --- AUTHENTICATION & INITIALIZATION ---
         onAuthStateChanged(auth, async (user) => {
-            if (user) {
+             if (user) {
+                // UTILIZADOR AUTENTICADO!
+                // A sessão foi "lembrada" da página de login.
                 userId = user.uid;
-                userIdDisplay.textContent = `ID de Sessão: ${userId.substring(0,8)}... (Anónimo)`;
-                appointmentsColRef = collection(db, `anonymous_users/${userId}/appointments`);
+                // Exibe o e-mail do utilizador em vez do ID.
+                userDisplay.textContent = `Conectado como: ${user.email}`;
+                
+                // Define o caminho seguro para os dados deste utilizador.
+                appointmentsColRef = collection(db, "users", userId, "appointments");
                 listenForAppointments();
+
             } else {
-                try {
-                    await signInAnonymously(auth);
-                } catch (error) { 
-                    console.error("Authentication failed:", error);
-                    userIdDisplay.textContent = "Erro de autenticação. Verifique as configurações do Firebase e os domínios autorizados.";
-                }
+                // NÃO AUTENTICADO!
+                // Se não houver utilizador, redirecione-o imediatamente para a página de login.
+                console.log("Utilizador não autenticado. A redirecionar para o login...");
+                window.location.href = 'index.html'; 
             }
         });
 
@@ -1096,7 +1093,7 @@
                         if(genericDateValue) checkinDate = Timestamp.fromDate(new Date(genericDateValue));
                     }
                     await updateDoc(doc(db, `artifacts/${appId}/users/${userId}/appointments`, id), { ...baseData, checkinDate, checkoutDate, hotelPeriodStart: checkinDate, hotelPeriodEnd: checkoutDate });
-                    editModal.classList.add('hidden');
+                    editModal.classList.remove('hidden');
                 } else {
                     const batch = writeBatch(db);
                     if (services.includes('Hotel')) {
@@ -1397,6 +1394,7 @@
                 resultDiv.innerHTML = `<p class="text-red-500">Ocorreu um erro. O nosso especialista parece estar a beber um café. Tente novamente.</p>`;
             }
         }
+        // --- FIM: LÓGICA DO PLANEJADOR DE IA ---
         
         function atualizarContadores() {
             const grupoGrandes = document.getElementById('grupo-grandes');
