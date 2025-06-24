@@ -404,16 +404,23 @@
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, doc, collection, onSnapshot, addDoc, updateDoc, deleteDoc, Timestamp, serverTimestamp, writeBatch } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
         
-        // --- CONFIG & INITIALIZATION ---
-        const appId = typeof __app_id !== 'undefined' ? __app_id : 'petshop-agenda-dev';
-        const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {
-            apiKey: "YOUR_API_KEY", authDomain: "YOUR_AUTH_DOMAIN", projectId: "YOUR_PROJECT_ID",
-            storageBucket: "YOUR_STORAGE_BUCKET", messagingSenderId: "YOUR_MESSAGING_SENDER_ID", appId: "YOUR_APP_ID"
+        // --- CONFIGURAÇÃO PARA DEPLOYMENT ---
+        const appId = 'petshop-agenda-prod'; 
+
+        const firebaseConfig = {
+          apiKey: "AIzaSyCFbwPsOyYD3HtSegk0j0zDGGOcjnc1Zn4",
+          authDomain: "creche-14172.firebaseapp.com",
+          projectId: "creche-14172",
+          storageBucket: "creche-14172.appspot.com",
+          messagingSenderId: "495724593146",
+          appId: "1:495724593146:web:74c18a306d8de607a66e43",
+          measurementId: "G-0MVHX1PXE4"
         };
-        const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
+        // --- FIM DA CONFIGURAÇÃO ---
+
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
         const auth = getAuth(app);
@@ -470,13 +477,16 @@
         onAuthStateChanged(auth, async (user) => {
             if (user) {
                 userId = user.uid;
-                userIdDisplay.textContent = `ID do Usuário: ${userId}`;
-                appointmentsColRef = collection(db, `artifacts/${appId}/users/${userId}/appointments`);
+                userIdDisplay.textContent = `ID de Sessão: ${userId.substring(0,8)}... (Anónimo)`;
+                appointmentsColRef = collection(db, `anonymous_users/${userId}/appointments`);
                 listenForAppointments();
             } else {
                 try {
-                    await (initialAuthToken ? signInWithCustomToken(auth, initialAuthToken) : signInAnonymously(auth));
-                } catch (error) { console.error("Authentication failed:", error); userIdDisplay.textContent = "Erro de autenticação."; }
+                    await signInAnonymously(auth);
+                } catch (error) { 
+                    console.error("Authentication failed:", error);
+                    userIdDisplay.textContent = "Erro de autenticação. Verifique as configurações do Firebase e os domínios autorizados.";
+                }
             }
         });
 
@@ -1387,7 +1397,6 @@
                 resultDiv.innerHTML = `<p class="text-red-500">Ocorreu um erro. O nosso especialista parece estar a beber um café. Tente novamente.</p>`;
             }
         }
-        // --- FIM: LÓGICA DO PLANEJADOR DE IA ---
         
         function atualizarContadores() {
             const grupoGrandes = document.getElementById('grupo-grandes');
@@ -1408,7 +1417,7 @@
             const searchValue = document.getElementById('busca-nome-historico').value.toLowerCase();
             
             if (!dateValue && !searchValue) {
-                renderHistoryResults([], true); // Limpa e mostra mensagem inicial
+                renderHistoryResults([], true); 
                 return;
             }
 
