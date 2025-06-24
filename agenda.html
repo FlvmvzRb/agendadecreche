@@ -242,24 +242,45 @@
             gap: 1rem;
             min-height: 100px;
         }
-
-        /* Estilos para Tabela no Modal */
-        #generic-modal-content table {
+        
+        /* --- Estilos do Planejador de Atividades com IA --- */
+        .ia-planner-section {
+            border-radius: 0.75rem;
+            padding: 1.5rem;
+        }
+        .ia-activity-result {
+            background-color: white;
+            border-radius: 0.5rem;
+            padding: 1.5rem;
+            margin-top: 1rem;
+            min-height: 100px;
+            white-space: pre-wrap; /* Mantém a formatação de quebra de linha */
+            line-height: 1.6;
+            color: #374151;
+        }
+        .ia-activity-result strong {
+            font-weight: 700;
+        }
+         .ia-activity-result ul {
+            list-style-type: disc;
+            padding-left: 20px;
+         }
+         .ia-activity-result table {
             width: 100%;
             border-collapse: collapse;
             margin-top: 1em;
-            margin-bottom: 1em;
-        }
-        #generic-modal-content th,
-        #generic-modal-content td {
-            border: 1px solid #d1d5db;
-            padding: 0.5rem 0.75rem;
-            text-align: left;
-        }
-        #generic-modal-content th {
-            background-color: #f3f4f6;
-            font-weight: 600;
-        }
+         }
+         .ia-activity-result th, .ia-activity-result td {
+             border: 1px solid #e5e7eb;
+             padding: 0.5rem 0.75rem;
+             text-align: left;
+         }
+         .ia-activity-result th {
+             background-color: #f9fafb;
+         }
+         #ia-activity-planner strong { color: #15803d; }
+         #ia-routine-generator strong { color: #4338ca; }
+         #ia-expert-chat strong { color: #d97706; }
     </style>
 </head>
 <body class="bg-gray-100 antialiased">
@@ -347,21 +368,6 @@
             </div>
         </div>
     </div>
-    
-    <!-- Modal Genérico para Conteúdos -->
-    <div id="generic-content-modal" class="hidden fixed inset-0 bg-black bg-opacity-60 z-50 flex items-center justify-center p-4">
-        <div class="bg-white rounded-lg shadow-xl w-full max-w-6xl max-h-[90vh] overflow-y-auto">
-             <div class="p-8">
-                <div class="flex justify-between items-center mb-4">
-                    <h3 id="generic-modal-title" class="text-3xl font-bold text-gray-800"></h3>
-                    <button id="close-generic-modal-btn" class="text-gray-500 hover:text-gray-800 text-3xl leading-none">&times;</button>
-                </div>
-                <div id="generic-modal-content" class="prose max-w-none">
-                    <!-- Conteúdo será injetado aqui -->
-                </div>
-            </div>
-        </div>
-    </div>
 
     <!-- Modal de Confirmação Genérico -->
     <div id="confirmation-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
@@ -404,8 +410,8 @@
         // --- CONFIG & INITIALIZATION ---
         const appId = typeof __app_id !== 'undefined' ? __app_id : 'petshop-agenda-dev';
         const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {
-            apiKey: "AIzaSyCFbwPsOyYD3HtSegk0j0zDGGOcjnc1Zn4", authDomain: "creche-14172.firebaseapp.com", projectId: "creche-14172",
-            storageBucket: "creche-14172.firebasestorage.app", messagingSenderId: "495724593146", appId: "1:495724593146:web:74c18a306d8de607a66e43",measurementId: "G-0MVHX1PXE4"
+            apiKey: "YOUR_API_KEY", authDomain: "YOUR_AUTH_DOMAIN", projectId: "YOUR_PROJECT_ID",
+            storageBucket: "YOUR_STORAGE_BUCKET", messagingSenderId: "YOUR_MESSAGING_SENDER_ID", appId: "YOUR_APP_ID"
         };
         const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
         const app = initializeApp(firebaseConfig);
@@ -441,16 +447,12 @@
         // --- DOM ELEMENTS (CACHE) ---
         const tabButtons = document.querySelectorAll('.tab-btn');
         const contentDisplay = document.getElementById('content-display');
-        const contentArea = document.getElementById('content-area');
-        const bookingSidebar = document.getElementById('booking-sidebar');
         const bookingForm = document.getElementById('booking-form');
         const editModal = document.getElementById('edit-modal');
         const editForm = document.getElementById('edit-form');
         const closeEditModalBtn = document.getElementById('close-edit-modal-btn');
         const checklistModal = document.getElementById('checklist-modal');
         const checklistForm = document.getElementById('checklist-form');
-        const checklistInfo = document.getElementById('checklist-info');
-        const checklistItemsContainer = document.getElementById('checklist-items');
         const closeChecklistModalBtn = document.getElementById('close-checklist-modal-btn');
         const userIdDisplay = document.getElementById('user-id-display');
         const confirmationModal = document.getElementById('confirmation-modal');
@@ -458,327 +460,12 @@
         const modalMessage = document.getElementById('modal-message');
         const modalConfirmBtn = document.getElementById('modal-confirm-btn');
         const modalCancelBtn = document.getElementById('modal-cancel-btn');
-
-        const genericContentModal = document.getElementById('generic-content-modal');
-        const genericModalTitle = document.getElementById('generic-modal-title');
-        const genericModalContent = document.getElementById('generic-modal-content');
-        const closeGenericModalBtn = document.getElementById('close-generic-modal-btn');
-
         const passwordModal = document.getElementById('password-modal');
         const passwordForm = document.getElementById('password-form');
         const passwordInput = document.getElementById('password-input');
         const passwordError = document.getElementById('password-error');
         const passwordCancelBtn = document.getElementById('password-cancel-btn');
-
-        // --- INÍCIO: Conteúdo completo para os modais ---
-        const bancoDeConteudos = {
-            politicaRecepcao: {
-                titulo: "Política de Excelência e Procedimentos – Setor de Recepção Empório Pet",
-                html: `
-                    <h3 class="text-xl font-bold mb-4">Nossa Filosofia: O Coração do Pet Shop, o Guardião da Experiência do Cliente</h3>
-                    <p class="mb-6">A recepção é o ponto de partida para todas as experiências em nosso pet shop. O colaborador desta área é o anfitrião, o organizador e o rosto da nossa marca. O objetivo desta política é estabelecer um padrão de excelência em cada gesto, garantindo segurança, eficiência e um atendimento que transmita o nosso amor e profissionalismo em cuidar de pets.</p>
-                    <h4 class="text-lg font-bold mb-2 text-emerald-700">Seção 1: Gentileza e Atendimento ao Cliente – O Padrão de Ouro</h4>
-                    <ul class="list-disc list-inside space-y-3 mb-6">
-                        <li><strong>A Primeira e a Última Impressão:</strong> Cumprimente cada cliente que entra com um sorriso e contato visual em até 5 segundos. Use o nome do tutor e do pet sempre que possível. Ex: "Olá, Sra. Ana! Que bom ver você e o Thor de novo!". Na despedida, agradeça pela visita e convide-os a retornar.</li>
-                        <li><strong>Comunicação Clara e Empática:</strong> Ouça com atenção as necessidades e preocupações do cliente sem interromper. Comunique-se de forma clara, positiva e profissional.</li>
-                        <li><strong>Gestão de Reclamações:</strong> Ao lidar com um cliente insatisfeito, mantenha a calma e a empatia. Siga o protocolo: Ouça, Demonstre Empatia, Peça desculpas pelo transtorno e Apresente uma Solução (ou chame o gerente para resolver).</li>
-                        <li><strong>Etiqueta Digital e Telefônica:</strong> Atenda ao telefone antes do terceiro toque com uma saudação padronizada: "Bom dia/Boa tarde, [Nome do Pet Shop], [Seu Nome] falando, em que posso ajudar?". Responda às mensagens de forma ágil e profissional.</li>
-                    </ul>
-                    <h4 class="text-lg font-bold mb-2 text-emerald-700">Seção 2: Segurança – A Prioridade Inegociável da Recepção</h4>
-                     <ul class="list-disc list-inside space-y-3 mb-6">
-                        <li><strong>Princípio da Eclusa:</strong> Mantenha sempre o portão externo fechado ao abrir a porta principal, e vice-versa. Nenhum cão deve ter acesso direto e desimpedido à rua.</li>
-                        <li><strong>Guia Obrigatória:</strong> Todos os cães devem estar na guia ao entrar e sair do pet shop. Ofereça uma guia da loja caso o cliente esteja sem.</li>
-                        <li><strong>Segurança na Área da Recepção:</strong> Evite o contato direto entre cães de tutores diferentes na área de espera, a menos que ambos os tutores consintam e os cães estejam calmos.</li>
-                     </ul>
-                    <h4 class="text-lg font-bold mb-2 text-emerald-700">Seção 3: Gestão de Serviços e Agenda – A Precisão que Move o Negócio</h4>
-                     <ul class="list-disc list-inside space-y-3 mb-6">
-                        <li><strong>Agendamento Perfeito:</strong> Colete todas as informações essenciais: nome completo do tutor, nome do pet, telefone, serviço, raça/porte e observações especiais (alergias, medo, etc.).</li>
-                        <li><strong>Conhecimento dos Tempos:</strong> Entenda o tempo necessário para cada serviço para não sobrecarregar os setores. Em caso de dúvida, confirme com a equipe responsável.</li>
-                        <li><strong>Confirmação:</strong> Confirme todos os agendamentos com 24 horas de antecedência.</li>
-                        <li><strong>Comunicação Intersetorial:</strong> Transmita todas as observações e pedidos especiais do tutor de forma clara e registrada para a equipe interna.</li>
-                     </ul>
-                     <h4 class="text-lg font-bold mb-2 text-emerald-700">Seção 4: Organização, Limpeza e Gestão de Produtos</h4>
-                     <ul class="list-disc list-inside space-y-3 mb-6">
-                        <li><strong>O Ambiente como Cartão de Visita:</strong> A recepção deve estar impecavelmente limpa e organizada em todos os momentos.</li>
-                        <li><strong>Gestão do Ponto de Venda (PDV) e Produtos:</strong> Mantenha os produtos expostos de forma atraente, com os preços visíveis e as prateleiras sem pó.</li>
-                        <li><strong>Controle de Validade (FIFO):</strong> Ao repor o estoque, produtos mais novos vão para o fundo. Realize uma verificação semanal de todas as datas de validade. Produtos com vencimento em 30 dias ou menos devem ser comunicados à gerência.</li>
-                        <li><strong>Gestão de Caixa:</strong> Siga rigorosamente os procedimentos de abertura e fechamento de caixa, com máxima atenção ao processar pagamentos e fornecer o troco.</li>
-                     </ul>
-                    <div class="mt-8 pt-4 border-t">
-                        <p class="font-semibold">Termo de Compromisso do Colaborador da Recepção</p>
-                        <p class="mt-4">Eu, [Nome do Colaborador], CPF [Número do CPF], declaro que recebi, li, compreendi e concordo em seguir integralmente a "Política de Excelência e Procedimentos do Setor de Recepção" do Empório Pet.</p>
-                        <p class="mt-2">Entendo meu papel como o coração da empresa e me comprometo a executar minhas funções com máxima segurança, gentileza, atenção e organização, visando sempre a melhor experiência para nossos clientes e seus pets.</p>
-                        <p class="mt-8">[Cidade], [Data].</p>
-                        <div class="mt-8 border-t border-gray-400 w-1/2"></div>
-                        <p class="mt-2">Assinatura do Colaborador</p>
-                    </div>`
-            },
-            rotinasEquipe: {
-                titulo: "Rotinas e Alocação de Equipe",
-                html: `
-                    <h3 class="text-xl font-bold mb-4">Análise e Alocação Estratégica da Equipe (Base para Todas as Rotinas)</h3>
-                    <p class="mb-4">Com 5 funcionários, a gestão ideal para os dois grupos (Grandes e Pequenos) seria:</p>
-                    <ul class="list-disc list-inside mb-6 space-y-2">
-                        <li><strong>2 Monitores Fixos - Grupo dos Grandes:</strong> Foco total na supervisão e interação com o grupo de maior porte.</li>
-                        <li><strong>1 Monitor Fixo - Grupo dos Pequenos:</strong> Supervisão dedicada, garantindo a segurança e o conforto dos menores.</li>
-                        <li><strong>1 Monitor de Atividades (Coringa):</strong> Prepara os materiais de enriquecimento (Kongs, quebra-cabeças), higieniza brinquedos e dá suporte ao grupo com a atividade mais complexa do momento.</li>
-                        <li><strong>1 Supervisor Geral / Recepção:</strong> Gerencia chegadas/saídas, comunicação com os tutores (fotos/vídeos), supervisiona ambos os grupos e coordena os intervalos da equipe.</li>
-                    </ul>
-                    <div class="space-y-8">
-                        <div>
-                            <h4 class="text-lg font-bold mb-2 text-emerald-700">1. Rotina de Segunda-feira: "Desafio e Energia" 🧠💪</h4>
-                            <p class="mb-3"><strong>Foco:</strong> Gastar a energia acumulada do fim de semana com atividades físicas e mentais estimulantes.</p>
-                            <table><thead><tr><th>Horário</th><th>Atividade</th><th>Grupo Grandes</th><th>Grupo Pequenos</th></tr></thead><tbody><tr><td>9:00 - 9:45</td><td>Chegada e Aquecimento</td><td>Integração e brincadeiras leves para aquecer a "musculatura".</td><td>Integração e exploração do ambiente.</td></tr><tr><td>9:45 - 11:30</td><td>Olimpíadas Caninas 🏆</td><td>Circuito de Agilidade Completo: Túnel, slalom de cones, saltos baixos e rampa.</td><td>Desafio Físico: Perseguição ao "Flirt Pole" e "Dança das Bolhas" (atóxicas).</td></tr><tr><td>11:30 - 12:30</td><td>Enriquecimento Desafiador</td><td>Libertação Congelada: Brinquedos grandes ou petiscos em blocos de gelo.</td><td>Quebra-Cabeças Interativos (Nível 2): Jogos que exigem mais raciocínio.</td></tr><tr><td>12:30 - 14:00</td><td>Hora do Descanso (Obrigatório!)</td><td>Recuperação Profunda: Descanso em ambiente silencioso e com luz baixa.</td><td>Descanso supervisionado para garantir a recuperação da energia.</td></tr><tr><td>14:00 - 15:30</td><td>Treinamento e Novos Truques</td><td>Sessão de Comandos: Treino de truques novos ("gira", "toca") ou reforço de comandos à distância.</td><td>Caça ao Tesouro Avançada: Petiscos escondidos em locais mais difíceis.</td></tr><tr><td>15:30 - 16:30</td><td>Volta à Calma</td><td>Brincadeira de cabo de guerra controlada com os monitores e socialização livre.</td><td>Brinquedos recheados (Kongs) para atividade calma de lamber.</td></tr><tr><td>16:30 em diante</td><td>Preparação para a Saída</td><td>Limpeza de patas, escovação final e organização para a partida.</td><td>Limpeza, escovação e organização para a partida.</td></tr></tbody></table>
-                            <p class="mt-3"><strong>Dica de Marketing 360°:</strong> Crie a "Segunda do Desafio". Poste vídeos dos circuitos e prometa aos tutores um cão feliz e exausto ao final do dia.</p>
-                        </div>
-                        <div>
-                            <h4 class="text-lg font-bold mb-2 text-emerald-700">2. Rotina de Terça-feira: "Equilíbrio 360°" ⚖️</h4>
-                            <p class="mb-3"><strong>Foco:</strong> Um dia perfeitamente balanceado, combinando socialização, atividades de enriquecimento e descanso essencial.</p>
-                            <table><thead><tr><th>Horário</th><th>Atividade</th><th>Grupo Grandes</th><th>Grupo Pequenos</th></tr></thead><tbody><tr><td>9:00 - 9:45</td><td>Chegada e Integração Suave</td><td>Boas-vindas, liberação gradual na área de socialização.</td><td>Boas-vindas, liberação em sua área. Brinquedos leves.</td></tr><tr><td>9:45 - 11:30</td><td>Pico de Energia e Socialização</td><td>Brincadeiras livres e supervisionadas: corridas, pega-pega.</td><td>Brincadeiras supervisionadas: perseguições leves.</td></tr><tr><td>11:30 - 12:30</td><td>Enriquecimento Ambiental</td><td>Atividade Cognitiva: "Muffin Tin Game" ou Garrafas Giratórias.</td><td>Atividade Sensorial: Piscina de bolinhas com petiscos.</td></tr><tr><td>12:30 - 14:00</td><td>Hora do Descanso e "Almoço"</td><td>Cromoterapia e Musicoterapia: Luzes reduzidas, música relaxante.</td><td>Mesmo protocolo, garantindo um ambiente tranquilo.</td></tr><tr><td>14:00 - 15:30</td><td>Reativação e Atividade Guiada</td><td>Atividade Física Leve: Circuito simples com túnel e cones.</td><td>Atividade Olfativa: "Tapete de Fuçar" (Snuffle Mat).</td></tr><tr><td>15:30 - 16:30</td><td>Desaceleração e Socialização Calma</td><td>Sessão de carinho com os monitores, escovação para quem gosta.</td><td>Sessão de Leitura para Cães ou massagem relaxante.</td></tr><tr><td>16:30 em diante</td><td>Preparação para a Saída</td><td>Limpeza, escovação e organização.</td><td>Limpeza, escovação e organização.</td></tr></tbody></table>
-                            <p class="mt-3"><strong>Dica de Marketing 360°:</strong> Comunique o valor do "Ciclo Completo do Bem-Estar", mostrando que sua creche entende a importância do descanso para a saúde mental dos cães.</p>
-                        </div>
-                        <div>
-                            <h4 class="text-lg font-bold mb-2 text-emerald-700">3. Rotina de Quarta-feira: "Inteligência e Foco" 🧐</h4>
-                            <p class="mb-3"><strong>Foco:</strong> Um dia dedicado a estimular a mente, com menos impacto físico e mais queima de energia mental.</p>
-                            <table><thead><tr><th>Horário</th><th>Atividade</th><th>Grupo Grandes</th><th>Grupo Pequenos</th></tr></thead><tbody><tr><td>9:00 - 9:45</td><td>Chegada e Ativação Mental</td><td>Integração com brinquedos que liberam comida para o café da manhã.</td><td>Exploração de caixas de papelão com petiscos fáceis.</td></tr><tr><td>9:45 - 11:30</td><td>Sessão de Faro e Descoberta</td><td>Caça ao Tesouro: Vários petiscos escondidos pelo ambiente.</td><td>Jogo dos Copos & Toalha Mágica: Jogos de encontrar o petisco.</td></tr><tr><td>11:30 - 12:30</td><td>Rodízio de Quebra-Cabeças</td><td>Estação de Puzzles: Monitores apresentam diferentes quebra-cabeças (Níveis 1, 2, 3).</td><td>Estação de Puzzles: Foco em puzzles de Nível 1 e 2.</td></tr><tr><td>12:30 - 14:00</td><td>Descanso para a Mente</td><td>Soneca essencial para processar o aprendizado, com música calma.</td><td>Soneca em ambiente tranquilo.</td></tr><tr><td>14:00 - 15:30</td><td>Escola de Truques</td><td>Aprendendo Comandos: Sessão para ensinar ou reforçar comandos como "pata", "deita", "rola".</td><td>Aprendendo Comandos: Foco em truques simples e divertidos.</td></tr><tr><td>15:30 - 16:30</td><td>Relaxamento Cognitivo</td><td>Brinquedos recheados (Kongs) para uma atividade mental leve.</td><td>Socialização calma e carinho.</td></tr><tr><td>16:30 em diante</td><td>Preparação para a Saída</td><td>Limpeza, escovação e organização.</td><td>Limpeza, escovação e organização.</td></tr></tbody></table>
-                            <p class="mt-3"><strong>Dica de Marketing 360°:</strong> Crie a "Quarta dos Gênios". É um grande atrativo para tutores de raças inteligentes (Border Collie, Poodle, Golden) e mostra um cuidado sofisticado.</p>
-                        </div>
-                         <div>
-                            <h4 class="text-lg font-bold mb-2 text-emerald-700">4. Rotina de Quinta-feira: "Conexão e Equipe" 🤝</h4>
-                            <p class="mb-3"><strong>Foco:</strong> Fortalecer o vínculo entre os cães e os monitores, além de aprimorar as habilidades sociais da matilha.</p>
-                            <table><thead><tr><th>Horário</th><th>Atividade</th><th>Grupo Grandes</th><th>Grupo Pequenos</th></tr></thead><tbody><tr><td>9:00 - 9:45</td><td>Recepção e Vínculo</td><td>Boas-vindas individuais com carinho e um petisco de cada monitor.</td><td>Mesma abordagem, criando associações positivas com a equipe.</td></tr><tr><td>9:45 - 11:30</td><td>Brincadeiras em Grupo</td><td>"Siga o Mestre": Cães seguem um monitor por um circuito.</td><td>Brincadeiras com Paraquedas: Usar um paraquedas colorido para brincar.</td></tr><tr><td>11:30 - 12:30</td><td>Gincana com Monitores</td><td>"Cabo de Guerra em Equipe": Monitores fazem duplas com os cães na brincadeira.</td><td>"Pega-Bolha em Dupla": Monitor faz bolhas para um cão específico pegar.</td></tr><tr><td>12:30 - 14:00</td><td>Descanso da Matilha</td><td>Descanso em conjunto, reforçando a calma coletiva.</td><td>Descanso supervisionado.</td></tr><tr><td>14:00 - 15:30</td><td>Etiqueta e Boas Maneiras</td><td>Treino de "Senta" em Grupo: Praticar o comando em conjunto para receber um prêmio.</td><td>Treino de "Vem" e "Fica": Com reforço positivo em massa.</td></tr><tr><td>15:30 - 16:30</td><td>Sessão de Afeto Coletivo</td><td>Monitores se sentam no chão para uma grande sessão de carinho e massagem.</td><td>Mesma abordagem, reforçando o sentimento de "família".</td></tr><tr><td>16:30 em diante</td><td>Preparação para a Saída</td><td>Limpeza, escovação e organização.</td><td>Limpeza, escovação e organização.</td></tr></tbody></table>
-                            <p class="mt-3"><strong>Dica de Marketing 360°:</strong> Promova a "Quinta da Conexão", mostrando como sua creche ensina habilidades sociais e fortalece a confiança dos cães com pessoas e outros animais.</p>
-                        </div>
-                        <div>
-                            <h4 class="text-lg font-bold mb-2 text-emerald-700">5. Rotina de Sexta-feira: "Zen e Sensorial" 🧘‍♀️</h4>
-                            <p class="mb-3"><strong>Foco:</strong> Desacelerar e relaxar, enviando os cães para o fim de semana tranquilos e equilibrados.</p>
-                            <table><thead><tr><th>Horário</th><th>Atividade</th><th>Grupo Grandes</th><th>Grupo Pequenos</th></tr></thead><tbody><tr><td>9:00 - 9:45</td><td>Recepção Acolhedora</td><td>Boas-vindas com música ambiente calma.</td><td>Exploração de tecidos e cheiros relaxantes no ambiente.</td></tr><tr><td>9:45 - 11:30</td><td>Exploração Sensorial</td><td>Circuito Sensorial Completo: Caminho com diferentes texturas.</td><td>Caixas de Cheiros e Texturas: Com itens seguros e relaxantes.</td></tr><tr><td>11:30 - 12:30</td><td>Atividade Olfativa Relaxante</td><td>Tapete de Fuçar Gigante: Espalhe vários tapetes pela área.</td><td>Sessão de Aromaterapia Segura: Difusor com lavanda + música.</td></tr><tr><td>12:30 - 14:00</td><td>Soneca Profunda</td><td>Ambiente Zen: Descanso com música instrumental, sons da natureza.</td><td>Descanso com massagem leve para os cães que aceitam.</td></tr><tr><td>14:00 - 15:30</td><td>Arte e Paladar Calmo</td><td>"Pintura" com as Patas: Tinta atóxica e comestível.</td><td>Picolés Caninos de Camomila: Atividade de lamber que é calmante.</td></tr><tr><td>15:30 - 16:30</td><td>Sessão de Afeto e Conexão</td><td>Sessão de Escovação e Carinho: Monitores no chão para interagir calmamente.</td><td>Sessão de Leitura: Monitor lê histórias em voz baixa e rítmica.</td></tr><tr><td>16:30 em diante</td><td>Preparação para a Saída</td><td>Limpeza e escovação em clima de tranquilidade.</td><td>Limpeza e escovação em clima de tranquilidade.</td></tr></tbody></table>
-                            <p class="mt-3"><strong>Dica de Marketing 360°:</strong> Crie a "Sexta Zen". Destaque como sua creche se preocupa em mandar os cães para o fim de semana tranquilos e equilibrados.</p>
-                        </div>
-                    </div>`
-            },
-            listaAtividades: {
-                titulo: "A Enciclopédia de Atividades 360° para a Creche Pet",
-                html: `
-                    <p class="mb-4"><strong>Objetivo:</strong> Um guia de referência completo para a equipe, garantindo um ambiente dinâmico, divertido e desenvolvimentista para os cães, todos os dias do ano.</p>
-                    <h3 class="text-xl font-bold mt-6 mb-2">PARTE 1: O Banco Central de Atividades (+ de 50 Ideias)</h3>
-                    <p class="mb-4">Aqui está a base, organizada por estímulo. A equipe pode escolher itens desta lista para as atividades diárias.</p>
-                    <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-                        <div class="p-4 bg-blue-50 rounded-lg">
-                            <h4 class="font-bold text-lg mb-2">🧠 Estímulos Cognitivos (Mente Ativa)</h4>
-                            <ul class="list-disc list-inside space-y-1">
-                                <li>Quebra-Cabeças (Níveis 1, 2 e 3)</li>
-                                <li>Garrafas Giratórias de Petiscos (DIY)</li>
-                                <li>Jogo dos Copos (Ache o Petisco)</li>
-                                <li>Muffin Tin Game (com Bolinhas)</li>
-                                <li>Treinamento de Novos Truques (Ex: "Toca", "Gira", "Rebola")</li>
-                                <li>"Ache o Brinquedo" (Nomear um brinquedo específico)</li>
-                                <li>Libertação Congelada (Brinquedos/petiscos em bloco de gelo)</li>
-                                <li>Adivinhe a Mão (Clássico de esconder o petisco)</li>
-                                <li>Comandos à Distância (Pedir "senta" do outro lado da sala)</li>
-                                <li>Empilhar Argolas (Adaptado para cães)</li>
-                                <li>Abrir Caixas (Caixas de papelão com petiscos dentro)</li>
-                                <li>Esconde-Esconde (com monitores)</li>
-                            </ul>
-                        </div>
-                        <div class="p-4 bg-green-50 rounded-lg">
-                            <h4 class="font-bold text-lg mb-2">👃 Estímulos Olfativos (Faro em Ação)</h4>
-                            <ul class="list-disc list-inside space-y-1">
-                                <li>Caça ao Tesouro (Tradicional)</li>
-                                <li>Tapete de Fuçar (Snuffle Mat)</li>
-                                <li>Toalha Mágica (Petiscos enrolados)</li>
-                                <li>Caixas de Cheiros (com itens seguros: alecrim, camomila, etc.)</li>
-                                <li>Trilha de Cheiros (com essência de baunilha ou caldo)</li>
-                                <li>Chuva de Ração (Jogar ração para o alto em área externa)</li>
-                                <li>"Scatter Feeding" (Espalhar ração pela grama/piso)</li>
-                                <li>Labirinto de Papelão (com petiscos no final)</li>
-                                <li>Brinquedos Escondidos (Esconder o brinquedo favorito do cão)</li>
-                            </ul>
-                        </div>
-                        <div class="p-4 bg-red-50 rounded-lg">
-                             <h4 class="font-bold text-lg mb-2">🏃‍♂️ Estímulos Físicos e Sensoriais (Corpo em Movimento)</h4>
-                             <ul class="list-disc list-inside space-y-1">
-                                <li>Circuito Sensorial (Texturas variadas)</li>
-                                <li>Piscina de Bolinhas (com ou sem petiscos)</li>
-                                <li>Túnel de Agilidade</li>
-                                <li>Slalom entre Cones</li>
-                                <li>Dança das Bolhas (com bolhas atóxicas)</li>
-                                <li>Perseguição ao "Flirt Pole" (Vara com brinquedo)</li>
-                                <li>Cabo de Guerra Controlado (com comando "larga")</li>
-                                <li>Pega-Pega com o Monitor</li>
-                                <li>Saltos Baixos (sobre pequenos obstáculos seguros)</li>
-                                <li>Rampa de Escalada (baixa e segura)</li>
-                                <li>"Bobbing for Toys" (Pegar brinquedos flutuantes em uma bacia com água)</li>
-                                <li>Cama Elástica Baixa (com supervisão intensa)</li>
-                                <li>Hula-Hoops (para passar por dentro, no chão ou saltar)</li>
-                             </ul>
-                        </div>
-                        <div class="p-4 bg-yellow-50 rounded-lg">
-                             <h4 class="font-bold text-lg mb-2">👅 Estímulos Alimentares (Hora do Lanche Divertida)</h4>
-                             <ul class="list-disc list-inside space-y-1">
-                                <li>Brinquedos Recheados Congelados (Kongs, etc.)</li>
-                                <li>Picolés Caninos (de frutas ou caldo)</li>
-                                <li>"Dispensers" de Ração (Wobblers, bolas, etc.)</li>
-                                <li>Papelote de Petisco (Embrulhado em papel manteiga)</li>
-                                <li>Legumes Congelados (cenoura, brócolis - verificar lista segura)</li>
-                                <li>Maçã Recheada (sem sementes, com pasta de amendoim segura)</li>
-                                <li>"DIY Food Puzzles" (Petiscos em rolos de papel toalha com as pontas dobradas)</li>
-                             </ul>
-                        </div>
-                        <div class="p-4 bg-purple-50 rounded-lg">
-                             <h4 class="font-bold text-lg mb-2">🧘‍♂️ Estímulos de Relaxamento (Momento Zen)</h4>
-                             <ul class="list-disc list-inside space-y-1">
-                                <li>Sessão de Musicoterapia (música clássica/relaxante)</li>
-                                <li>Aromaterapia Segura (difusor com lavanda/camomila)</li>
-                                <li>Sessão de Massagem (Tellington TTouch, por exemplo)</li>
-                                <li>Escovação Relaxante</li>
-                                <li>Leitura para Cães (monitor lê em voz calma)</li>
-                                <li>Sessão de Carinho em Grupo (monitores no chão)</li>
-                                <li>Audição de Sons da Natureza (pássaros, água corrente)</li>
-                                <li>Contato com Tecidos (disponibilizar mantas com texturas diferentes)</li>
-                                <li>Luz Reduzida (diminuir a intensidade da luz em certos momentos)</li>
-                             </ul>
-                        </div>
-                    </div>
-                    <h3 class="text-xl font-bold mt-6 mb-2">PARTE 2: Planejamento Temático (O Pulo do Gato)</h3>
-                    <p class="mb-4">Para nunca cair na rotina, a equipe pode adotar temas semanais. Isso cria expectativa nos clientes e facilita o planejamento.</p>
-                     <ul class="list-disc list-inside mb-6 space-y-2">
-                        <li><strong>Semana do Detetive 🕵️‍♂️:</strong> Foco total em atividades olfativas e cognitivas.</li>
-                        <li><strong>Semana de Olimpíadas Caninas 🏆:</strong> Foco em atividades físicas (circuitos, saltos, túneis). No final da semana, tem "pódio" com medalhas de petisco.</li>
-                        <li><strong>Semana SPA & Zen 🧘‍♀️:</strong> Foco em atividades de relaxamento, massagem, musicoterapia. Perfeito para semanas mais frias ou chuvosas.</li>
-                        <li><strong>Semana do Artista 🎨:</strong> Atividades como "pintura com as patas" (tinta atóxica e segura), "escultura" (caixas de destruição).</li>
-                        <li><strong>Semana de Aventura na Selva 🌳:</strong> Usar elementos da natureza (folhas secas, galhos seguros), caça ao tesouro e esconde-esconde.</li>
-                        <li><strong>Semana Culinária "Master-Cão" 🧑‍🍳:</strong> Foco em estímulos alimentares, com picolés diferentes a cada dia, degustação de frutas seguras, etc.</li>
-                        <li><strong>Semana de Super-Heróis 🦸:</strong> Circuito de "treinamento de herói", missões de resgate de brinquedos, etc.</li>
-                     </ul>
-                     <h3 class="text-xl font-bold mt-6 mb-2">Ideias para Temas Sazonais/Feriados (Marketing de Ouro)</h3>
-                     <ul class="list-disc list-inside mb-6 space-y-2">
-                        <li><strong>Festa Junina Pet:</strong> "Pescaria" de brinquedos na bacia, "correio elegante" com recados dos pets, "barraca do lambeijo".</li>
-                        <li><strong>Cão-loween (Halloween):</strong> Caça a petiscos "assustadores", piscina de bolinhas laranja e preta, concurso de fantasia (para cães que toleram).</li>
-                        <li><strong>Natal Au-Au:</strong> Amigo secreto de brinquedos, sessão de fotos com gorro de Noel, confecção de biscoitos natalinos para cães.</li>
-                        <li><strong>Carnaval dos Pets:</strong> "Bloquinho de carnaval" no pátio, chuva de confete (de papel, fácil de limpar), muita música e bolhas de sabão.</li>
-                        <li><strong>Páscoa Canina:</strong> Caça aos "ovos" (bolas ou brinquedos que abrem com petiscos dentro).</li>
-                        <li><strong>Olimpíadas de Verão:</strong> Muitas atividades com água, natação se houver piscina, picolés e "bobbing for toys".</li>
-                     </ul>
-                     <h3 class="text-xl font-bold mt-6 mb-2">PARTE 3: Manual do Monitor 360°</h3>
-                     <p class="mb-4">Para sua equipe extrair o máximo de tudo isso:</p>
-                     <ul class="list-disc list-inside mb-6 space-y-2">
-                        <li><strong>Crie o "Boletim do Dia":</strong> Uma pequena lousa ou um story no Instagram/WhatsApp no final do dia. Ex: "Atividades de Hoje (Semana do Detetive): 🕵️‍♂️ Caça ao Tesouro com cheiro de frango; 🧠 Jogo dos Copos; 🧘‍♂️ Música clássica para relaxar." Os tutores AMAM saber os detalhes.</li>
-                        <li><strong>"Cão Destaque do Dia":</strong> Todo dia, escolha um cão e faça um post especial dele realizando uma atividade. Gera engajamento e agrada o tutor.</li>
-                        <li><strong>Kit de Enriquecimento Básico:</strong> A equipe deve ter sempre à mão um kit com: potes de muffin, bolinhas, cones, cordas, Kongs, formas de gelo, caixas de papelão.</li>
-                        <li><strong>A Regra dos 5 Minutos:</strong> Um novo truque ou uma atividade cognitiva não precisa durar horas. Sessões focadas de 5 minutos são extremamente eficazes e fáceis de encaixar na rotina.</li>
-                        <li><strong>Workshop de DIY:</strong> Promova uma tarde para a própria equipe construir os brinquedos (garrafas giratórias, tapetes de fuçar, etc.). Isso gera engajamento do time e economiza recursos (Gestão Financeira e de Operações).</li>
-                     </ul>`
-            },
-            crechePolicy: {
-                titulo: "Política de Comportamento e Segurança para Colaboradores – Setor de Creche e Hotel Empório Pet",
-                html: `
-                    <h3 class="text-xl font-bold mb-4">Nossa Missão: Ser o Guardião da Felicidade e Segurança de Cada Cão</h3>
-                    <p class="mb-6">Cada colaborador do Empório Pet é a peça mais importante para o sucesso da nossa missão. Vocês são os responsáveis diretos pelo bem-estar físico e emocional dos cães que nos são confiados. Esta política estabelece os padrões de conduta e segurança que garantem um ambiente excepcional para os pets, tranquilidade para os tutores e um local de trabalho seguro e profissional para toda a equipe.</p>
-                    <h4 class="text-lg font-bold mb-2 text-emerald-700">Seção 1: Segurança em Primeiro Lugar – Nossas Regras de Ouro</h4>
-                     <p class="mb-4">A segurança é inegociável. A violação de qualquer uma destas regras será tratada com a máxima seriedade.</p>
-                     <ul class="list-disc list-inside space-y-3 mb-6">
-                        <li><strong>Supervisão Ativa e Constante (A Regra dos 5 Segundos):</strong> É proibido o uso de celulares para fins pessoais na área dos cães. A atenção deve estar 100% na matilha. A cada 10 segundos, seus olhos devem escanear todo o grupo.</li>
-                        <li><strong>Manejo e Interação Correta com os Cães:</strong> Utilize apenas reforço positivo. Gritos, punições físicas ou qualquer forma de intimidação são estritamente proibidos.</li>
-                        <li><strong>Interrupção Segura:</strong> Nunca coloque seu corpo entre cães que estão brigando. Use objetos (placas, pranchas), sons altos ou jatos de água para separar os animais.</li>
-                        <li><strong>Prevenção e Gerenciamento de Conflitos:</strong> Antecipe comportamentos de risco e redirecione a atenção dos cães. Comunique imediatamente ao Supervisor qualquer interação tensa.</li>
-                        <li><strong>Controle de Acessos e Portões:</strong> Sistema de dupla checagem sempre. Nenhum portão que dá acesso à rua pode ser aberto sem que um portão interno de segurança esteja fechado.</li>
-                        <li><strong>Higiene e Saúde:</strong> Fezes e urina devem ser limpos imediatamente. Água fresca deve estar sempre disponível. Reporte qualquer sinal de anormalidade (diarreia, vômito, tosse, etc.) ao Supervisor.</li>
-                     </ul>
-                     <h4 class="text-lg font-bold mb-2 text-emerald-700">Seção 2: Conduta e Comportamento Profissional</h4>
-                      <p class="mb-4">Vocês são a cara e a voz do Empório Pet. A forma como agem impacta diretamente a confiança do cliente.</p>
-                     <ul class="list-disc list-inside space-y-3 mb-6">
-                        <li><strong>Postura Proativa e Apaixonada:</strong> Demonstre carinho e paciência com todos os cães. Chame-os pelo nome. Conheça suas personalidades.</li>
-                        <li><strong>Comunicação com o Cliente:</strong> Ao entregar um cão ao tutor, sempre tenha uma história positiva para contar. "O Thor se divertiu muito hoje!". Nunca comunique um problema diretamente; reporte ao Supervisor.</li>
-                        <li><strong>Apresentação Pessoal:</strong> O uniforme deve ser usado durante todo o expediente e mantido limpo e em bom estado.</li>
-                     </ul>
-                    <h4 class="text-lg font-bold mb-2 text-emerald-700">Seção 3: Rotinas e Responsabilidades</h4>
-                    <ul class="list-disc list-inside space-y-3 mb-6">
-                       <li><strong>Cumprimento das Rotinas:</strong> Siga rigorosamente a "Rotina do Dia" para garantir que os cães recebam os estímulos e o descanso programados.</li>
-                       <li><strong>Registro de Informações:</strong> Utilize o diário de bordo ou sistema para registrar todas as informações relevantes: alimentação, medicação, comportamentos, etc.</li>
-                       <li><strong>Organização do Espaço:</strong> Ao final do expediente, todos são responsáveis por guardar brinquedos, higienizar o material e preparar o ambiente para o dia seguinte.</li>
-                    </ul>
-                    <div class="mt-8 pt-4 border-t">
-                        <p class="font-semibold">Termo de Compromisso do Colaborador</p>
-                        <p class="mt-4">Eu, [Nome do Colaborador], portador do CPF [Número do CPF], declaro que recebi, li, compreendi e concordo em seguir integralmente a "Política de Comportamento e Segurança para Colaboradores” do Empório Pet.</p>
-                        <p class="mt-2">Entendo que meu papel é fundamental para a segurança e o bem-estar dos animais e me comprometo a agir sempre com profissionalismo, diligência e paixão, seguindo os protocolos aqui estabelecidos. Estou ciente de que o descumprimento destas diretrizes pode resultar em medidas disciplinares.</p>
-                        <p class="mt-8">[Cidade], [Data].</p>
-                        <div class="mt-8 border-t border-gray-400 w-1/2"></div>
-                        <p class="mt-2">Assinatura do Colaborador</p>
-                    </div>`
-            },
-            taxiPolicy: {
-                titulo: "Política de Excelência e Segurança – Setor de Taxi Dog Empório Pet",
-                html: `
-                    <h3 class="text-xl font-bold mb-4">Nossa Filosofia: Embaixadores Sobre Rodas, Guardiões do Bem-Estar em Trânsito</h3>
-                    <p class="mb-6">O serviço de Taxi Dog é a extensão móvel do nosso cuidado e profissionalismo. O motorista não é apenas um condutor; é um representante da nossa marca e o responsável direto pela segurança e conforto do pet durante todo o trajeto. Esta política define os padrões de excelência para garantir um transporte seguro, pontual, higiênico e de alta qualidade.</p>
-                    <h4 class="text-lg font-bold mb-2 text-emerald-700">Seção 1: Segurança do Animal em Trânsito – Nossa Carga é Preciosa</h4>
-                    <ul class="list-disc list-inside space-y-3 mb-6">
-                        <li><strong>Métodos de Transporte Seguro (ATUALIZADO):</strong>
-                            <ul class="list-circle list-inside ml-4 mt-2">
-                                <li><strong>Método Padrão e Preferencial - Caixa de Transporte:</strong> Todos os cães devem, preferencialmente, ser transportados individualmente em caixas de transporte seguras, limpas, bem ventiladas e de tamanho apropriado. Exceto os cães que não couberem dentro de uma caixa, neste caso prenda os cães na barra de segurança do veículo com uma guia.</li>
-                                <li><strong>Método de Exceção - Cinto de Segurança com Peitoral:</strong> Permissão: A viagem de cães fora da caixa de transporte é permitida apenas em casos excepcionais (ex: ansiedade severa de caixa, porte incompatível com as caixas disponíveis) e mediante autorização prévia de um supervisor.</li>
-                            </ul>
-                        </li>
-                        <li><strong>Climatização e Ventilação:</strong> O veículo deve ser mantido em temperatura agradável. Nunca deixe um animal sozinho dentro do veículo.</li>
-                        <li><strong>Procedimentos de Embarque e Desembarque:</strong> O cão deve ser recebido e entregue sempre com a guia. Entregue o cão diretamente a uma pessoa autorizada.</li>
-                    </ul>
-                    <h4 class="text-lg font-bold mb-2 text-emerald-700">Seção 2: Qualidade do Serviço e Conduta do Motorista</h4>
-                    <ul class="list-disc list-inside space-y-3 mb-6">
-                        <li><strong>Direção Defensiva e Responsável:</strong> Cumpra rigorosamente todas as leis de trânsito. Dirija de forma suave para o conforto do animal.</li>
-                        <li><strong>Pontualidade e Roteirização:</strong> Planeje sua rota com antecedência. Em caso de atrasos, comunique imediatamente à recepção.</li>
-                        <li><strong>Comunicação e Profissionalismo:</strong> Apresente-se sempre uniformizado, com aparência limpa e profissional. Seja cordial e educado.</li>
-                    </ul>
-                    <h4 class="text-lg font-bold mb-2 text-emerald-700">Seção 3: Cuidados com o Veículo, Limpeza e Organização</h4>
-                     <ul class="list-disc list-inside space-y-3 mb-6">
-                        <li><strong>Checklist de Verificação e Segurança do Veículo (Obrigatório no Início do Dia) (ATUALIZADO):</strong>
-                             <ul class="list-circle list-inside ml-4 mt-2">
-                                 <li>[ ] Nível dos pneus.</li>
-                                 <li>[ ] Funcionamento de faróis, setas e luz de freio.</li>
-                                 <li>[ ] Limpeza dos vidros e espelhos.</li>
-                                 <li>[ ] Nível do óleo do motor.</li>
-                                 <li>[ ] Nível da água do radiador.</li>
-                                 <li>[ ] Buzina.</li>
-                             </ul>
-                             <p class="ml-4">Reporte qualquer irregularidade ao seu supervisor antes de iniciar as atividades.</p>
-                        </li>
-                        <li><strong>Cuidado Geral e Manutenção Preventiva:</strong> Reporte imediatamente qualquer barulho estranho, luz de advertência no painel ou problema mecânico.</li>
-                        <li><strong>Protocolo de Limpeza e Higienização:</strong> Limpe imediatamente qualquer sujeira entre viagens. Realize uma limpeza diária ao final do expediente e uma limpeza semanal completa.</li>
-                        <li><strong>Limpeza e Organização da Vaga de Estacionamento:</strong> Garanta que a vaga designada para o veículo seja mantida limpa e livre de lixo ou detritos.</li>
-                     </ul>
-                    <h4 class="text-lg font-bold mb-2 text-emerald-700">Seção 4: Procedimentos em Emergências</h4>
-                     <ul class="list-disc list-inside space-y-3 mb-6">
-                        <li><strong>Comunicação com a Base:</strong> Mantenha contato constante com a recepção, informando sobre o status de cada serviço.</li>
-                        <li><strong>Emergência com o Animal:</strong> Se um animal passar mal, estacione em local seguro e ligue imediatamente para o seu supervisor.</li>
-                        <li><strong>Acidente de Trânsito:</strong> Priorize a segurança. Sinalize o local, verifique a condição do animal e contate seu supervisor e, se necessário, as autoridades.</li>
-                     </ul>
-                    <div class="mt-8 pt-4 border-t">
-                        <p class="font-semibold">Termo de Compromisso do Colaborador do Taxi Dog</p>
-                        <p class="mt-4">Eu, [Nome do Colaborador], CPF [Número do CPF], declaro que recebi, li, compreendi e concordo em seguir integralmente a "Política de Excelência e Segurança do Setor de Taxi Dog" do Empório Pet.</p>
-                        <p class="mt-2">Entendo a importância da minha função para a segurança dos pets e para a imagem da empresa, e me comprometo a cumprir todos os protocolos de segurança, condução, limpeza e manutenção aqui descritos.</p>
-                        <p class="mt-8">[Cidade], [Data].</p>
-                        <div class="mt-8 border-t border-gray-400 w-1/2"></div>
-                        <p class="mt-2">Assinatura do Colaborador</p>
-                    </div>`
-            }
-        };
-        // --- FIM: Conteúdo completo para os modais ---
-
-        // --- FORM TEMPLATE ---
-        const getFormHTML = (idPrefix = "") => `
-            <input type="hidden" id="${idPrefix}booking-id">
-            <div><label for="${idPrefix}tutor-name" class="block text-sm font-medium">Nome do Tutor</label><input type="text" id="${idPrefix}tutor-name" class="form-input" required></div>
-            <div><label for="${idPrefix}pet-name" class="block text-sm font-medium">Nome do Pet</label><input type="text" id="${idPrefix}pet-name" class="form-input" required></div>
-            <div><label for="${idPrefix}pet-breed" class="block text-sm font-medium">Raça do Pet</label><input type="text" id="${idPrefix}pet-breed" class="form-input" required></div>
-            <div id="${idPrefix}generic-date-container" class="space-y-2"><label for="${idPrefix}generic-date" class="block text-sm font-medium">Data do Agendamento</label><input type="datetime-local" id="${idPrefix}generic-date" class="form-input"></div>
-            <fieldset class="pt-2"><legend class="text-sm font-medium mb-2">Serviços Solicitados</legend><div class="space-y-2"><div class="flex items-center"><input type="checkbox" id="${idPrefix}service-package-creche" class="form-checkbox"> <label for="${idPrefix}service-package-creche" class="ml-2">Pacote de Creche</label></div><div class="flex items-center"><input type="checkbox" id="${idPrefix}service-creche" class="form-checkbox"> <label for="${idPrefix}service-creche" class="ml-2">Creche</label></div><div class="flex items-center"><input type="checkbox" id="${idPrefix}service-hotel" class="form-checkbox"> <label for="${idPrefix}service-hotel" class="ml-2">Hotel</label></div><div class="flex items-center"><input type="checkbox" id="${idPrefix}service-taxi" class="form-checkbox"> <label for="${idPrefix}service-taxi" class="ml-2">Taxi Dog</label></div></div></fieldset>
-            <div id="${idPrefix}hotel-details-container" class="hidden space-y-4 pt-2 border-t border-teal-500"><h3 class="font-semibold text-center">Detalhes da Hospedagem</h3><div><label for="${idPrefix}hotel-checkin-date" class="block text-sm font-medium">Check-in do Hotel</label><input type="datetime-local" id="${idPrefix}hotel-checkin-date" class="form-input"></div><div><label for="${idPrefix}hotel-checkout-date" class="block text-sm font-medium">Check-out do Hotel</label><input type="datetime-local" id="${idPrefix}hotel-checkout-date" class="form-input"></div><div class="flex items-center pl-2"><input type="checkbox" id="${idPrefix}service-bath" class="form-checkbox"> <label for="${idPrefix}service-bath" class="ml-2">Saída com Banho</label></div></div>
-            <div id="${idPrefix}package-calendar-container" class="hidden space-y-2 pt-2 border-t border-teal-500"><h3 class="font-semibold text-center">Selecione os Dias do Pacote</h3><div id="${idPrefix}calendar" class="bg-white/10 p-3 rounded-lg"></div></div>
-            <div id="${idPrefix}taxi-dog-details-container" class="hidden space-y-4 pt-2 border-t border-teal-500"><h3 class="font-semibold text-center">Detalhes do Taxi Dog</h3><div><label for="${idPrefix}taxi-pickup-time" class="block text-sm font-medium">Horário de Busca</label><input type="time" id="${idPrefix}taxi-pickup-time" class="form-input"></div><div><label for="${idPrefix}taxi-return-time" class="block text-sm font-medium">Horário de Devolução</label><input type="time" id="${idPrefix}taxi-return-time" class="form-input"></div><div><label for="${idPrefix}taxi-route" class="block text-sm font-medium">Rota</label><select id="${idPrefix}taxi-route" class="form-input form-select-dark-text" required><option value="">Selecione a rota</option><option value="Rota 1">Rota 1</option><option value="Rota 2">Rota 2</option><option value="Rota 3">Rota 3</option><option value="Rota 4">Rota 4</option><option value="Rota 5">Rota 5</option></select></div></div>
-            <div><label for="${idPrefix}observations" class="block text-sm font-medium">Observações</label><textarea id="${idPrefix}observations" rows="3" class="form-input"></textarea></div>
-            <div class="flex flex-col space-y-2 pt-4"><button type="submit" class="w-full bg-green-500 hover:bg-green-600 text-white font-bold py-3 px-4 rounded-lg transition-colors duration-300 shadow-md">Salvar</button></div>
-        `;
-        
+       
         // --- AUTHENTICATION & INITIALIZATION ---
         onAuthStateChanged(auth, async (user) => {
             if (user) {
@@ -820,8 +507,20 @@
         };
         addStyles();
 
-        // --- INÍCIO: FUNÇÕES RESTAURADAS ---
-
+        const getFormHTML = (idPrefix = "") => `
+            <input type="hidden" id="${idPrefix}booking-id">
+            <div><label for="${idPrefix}tutor-name" class="block text-sm font-medium">Nome do Tutor</label><input type="text" id="${idPrefix}tutor-name" class="form-input" required></div>
+            <div><label for="${idPrefix}pet-name" class="block text-sm font-medium">Nome do Pet</label><input type="text" id="${idPrefix}pet-name" class="form-input" required></div>
+            <div><label for="${idPrefix}pet-breed" class="block text-sm font-medium">Raça do Pet</label><input type="text" id="${idPrefix}pet-breed" class="form-input" required></div>
+            <div id="${idPrefix}generic-date-container" class="space-y-2"><label for="${idPrefix}generic-date" class="block text-sm font-medium">Data do Agendamento</label><input type="datetime-local" id="${idPrefix}generic-date" class="form-input"></div>
+            <fieldset class="pt-2"><legend class="text-sm font-medium mb-2">Serviços Solicitados</legend><div class="space-y-2"><div class="flex items-center"><input type="checkbox" id="${idPrefix}service-package-creche" class="form-checkbox"> <label for="${idPrefix}service-package-creche" class="ml-2">Pacote de Creche</label></div><div class="flex items-center"><input type="checkbox" id="${idPrefix}service-creche" class="form-checkbox"> <label for="${idPrefix}service-creche" class="ml-2">Creche</label></div><div class="flex items-center"><input type="checkbox" id="${idPrefix}service-hotel" class="form-checkbox"> <label for="${idPrefix}service-hotel" class="ml-2">Hotel</label></div><div class="flex items-center"><input type="checkbox" id="${idPrefix}service-taxi" class="form-checkbox"> <label for="${idPrefix}service-taxi" class="ml-2">Taxi Dog</label></div></div></fieldset>
+            <div id="${idPrefix}hotel-details-container" class="hidden space-y-4 pt-2 border-t border-teal-500"><h3 class="font-semibold text-center">Detalhes da Hospedagem</h3><div><label for="${idPrefix}hotel-checkin-date" class="block text-sm font-medium">Check-in do Hotel</label><input type="datetime-local" id="${idPrefix}hotel-checkin-date" class="form-input"></div><div><label for="${idPrefix}hotel-checkout-date" class="block text-sm font-medium">Check-out do Hotel</label><input type="datetime-local" id="${idPrefix}hotel-checkout-date" class="form-input"></div><div class="flex items-center pl-2"><input type="checkbox" id="${idPrefix}service-bath" class="form-checkbox"> <label for="${idPrefix}service-bath" class="ml-2">Saída com Banho</label></div></div>
+            <div id="${idPrefix}package-calendar-container" class="hidden space-y-2 pt-2 border-t border-teal-500"><h3 class="font-semibold text-center">Selecione os Dias do Pacote</h3><div id="${idPrefix}calendar" class="bg-white/10 p-3 rounded-lg"></div></div>
+            <div id="${idPrefix}taxi-dog-details-container" class="hidden space-y-4 pt-2 border-t border-teal-500"><h3 class="font-semibold text-center">Detalhes do Taxi Dog</h3><div><label for="${idPrefix}taxi-pickup-time" class="block text-sm font-medium">Horário de Busca</label><input type="time" id="${idPrefix}taxi-pickup-time" class="form-input"></div><div><label for="${idPrefix}taxi-return-time" class="block text-sm font-medium">Horário de Devolução</label><input type="time" id="${idPrefix}taxi-return-time" class="form-input"></div><div><label for="${idPrefix}taxi-route" class="block text-sm font-medium">Rota</label><select id="${idPrefix}taxi-route" class="form-input form-select-dark-text" required><option value="">Selecione a rota</option><option value="Rota 1">Rota 1</option><option value="Rota 2">Rota 2</option><option value="Rota 3">Rota 3</option><option value="Rota 4">Rota 4</option><option value="Rota 5">Rota 5</option></select></div></div>
+            <div><label for="${idPrefix}observations" class="block text-sm font-medium">Observações</label><textarea id="${idPrefix}observations" rows="3" class="form-input"></textarea></div>
+            <div class="flex flex-col space-y-2 pt-4"><button type="submit" class="w-full bg-green-500 hover:bg-green-600 text-white font-bold py-3 px-4 rounded-lg transition-colors duration-300 shadow-md">Salvar</button></div>
+        `;
+        
         function initializeFormLogic(prefix = "") {
             const form = document.getElementById(prefix ? 'edit-form' : 'booking-form'); if (!form) return;
             const hotelCheckbox = document.getElementById(`${prefix}service-hotel`), crecheCheckbox = document.getElementById(`${prefix}service-creche`), packageCrecheCheckbox = document.getElementById(`${prefix}service-package-creche`), taxiCheckbox = document.getElementById(`${prefix}service-taxi`);
@@ -925,7 +624,6 @@
             let dateInfo = (services.includes('Hotel') && appt.hotelPeriodStart) ? `<p class="text-sm"><span class="font-semibold">Período:</span> ${formatDate(appt.hotelPeriodStart)} a ${formatDate(appt.hotelPeriodEnd)}</p><p class="text-sm"><span class="font-semibold">Data de Hoje:</span> ${formatDate(appt.checkinDate)}</p>` : `<p class="text-sm"><span class="font-semibold">Data:</span> ${formatDate(appt.checkinDate, true)}</p>`;
             let taxiInfo = services.includes('Taxi Dog') && appt.taxiDetails ? `<div class="mt-2 pt-2 border-t"><p class="font-semibold text-teal-700">Taxi Dog: ${appt.taxiDetails.route || 'N/A'}</p><p class="text-xs">Busca: ${appt.taxiDetails.pickupTime || 'N/A'} | Devolução: ${appt.taxiDetails.returnTime || 'N/A'}</p></div>` : '';
             
-            // INÍCIO: CORREÇÃO & CÓDIGO DEFENSIVO
             card.innerHTML = `
                 <div class="card-header flex justify-between items-start">
                     <div>
@@ -950,7 +648,6 @@
                     <div class="action-buttons mt-4 pt-4 border-t flex flex-wrap gap-2 justify-end"></div>
                 </div>
             `;
-            // FIM: CORREÇÃO & CÓDIGO DEFENSIVO
             
             const buttonContainer = card.querySelector('.action-buttons');
             
@@ -996,8 +693,6 @@
             return card;
         }
 
-        // --- FIM: FUNÇÕES RESTAURADAS ---
-
         // --- Lógica de Troca de Abas com Senha ---
         function performTabSwitch(newTab) {
             currentTab = newTab;
@@ -1041,6 +736,8 @@
         // --- UI & TAB LOGIC ---
         function updateLayoutForTab() {
             const isReception = currentTab === 'reception';
+            const bookingSidebar = document.getElementById('booking-sidebar');
+            const contentArea = document.getElementById('content-area');
             bookingSidebar.classList.toggle('hidden', !isReception);
             if(isReception) {
                 toggleSidebar(isSidebarVisible); // Restore state
@@ -1052,6 +749,7 @@
         }
 
         function toggleSidebar(visible) {
+            const bookingSidebar = document.getElementById('booking-sidebar');
             isSidebarVisible = visible;
             bookingSidebar.classList.toggle('hidden-sidebar', !isSidebarVisible);
             const sidebarToggle = document.getElementById('sidebar-toggle-btn');
@@ -1063,6 +761,7 @@
         }
 
         function updateContentAreaWidth() {
+            const contentArea = document.getElementById('content-area');
             if(currentTab === 'reception' && isSidebarVisible) {
                 contentArea.classList.add('md:w-2/3', 'lg:w-3/4');
                 contentArea.classList.remove('w-full');
@@ -1112,6 +811,7 @@
         // --- MAIN RENDER FUNCTION ---
         function renderContent() {
             if (!userId) return;
+            const contentDisplay = document.getElementById('content-display');
             contentDisplay.innerHTML = '';
             
             contentDisplay.classList.toggle('modo-compacto', isCompactMode);
@@ -1180,36 +880,110 @@
                 if(mainContentContainer) mainContentContainer.appendChild(listContainer);
             }
             
-            const toolsAndPoliciesContainer = document.createElement('div');
-            toolsAndPoliciesContainer.className = 'mt-8 pt-4 border-t-2 border-gray-200';
-            
             if(currentTab === 'reception'){
                 const historySection = document.createElement('section');
                 historySection.id = 'historico-servicos';
-                historySection.className = 'secao-filtros';
-                historySection.innerHTML = `<h2 class="flex items-center gap-2"><i data-feather="archive" class="w-6 h-6"></i>Histórico de Serviço</h2><div class="controles-filtro"><div class="filtro-item"><label for="filtro-data-historico">Filtrar por Data:</label><input type="date" id="filtro-data-historico"></div><div class="filtro-item"><label for="busca-nome-historico">Buscar por Nome:</label><input type="search" id="busca-nome-historico" placeholder="Digite o nome do Pet ou Tutor..."></div></div><div id="historico-list-container"><p class="text-gray-500 col-span-full">Use os filtros acima para buscar no histórico.</p></div>`;
-                toolsAndPoliciesContainer.appendChild(historySection);
+                historySection.className = 'mt-8 pt-6 border-t-2 border-gray-200';
+                historySection.innerHTML = `<h2 class="text-2xl font-bold text-gray-800 mb-4 flex items-center gap-2"><i data-feather="archive" class="w-6 h-6"></i>Histórico de Serviço</h2><div class="controles-filtro"><div class="filtro-item"><label for="filtro-data-historico">Filtrar por Data:</label><input type="date" id="filtro-data-historico"></div><div class="filtro-item"><label for="busca-nome-historico">Buscar por Nome:</label><input type="search" id="busca-nome-historico" placeholder="Digite o nome do Pet ou Tutor..."></div></div><div id="historico-list-container"><p class="text-gray-500 col-span-full">Use os filtros acima para buscar no histórico.</p></div>`;
+                contentDisplay.appendChild(historySection);
             }
 
-            const policyButtonsContainer = document.createElement('div');
-            policyButtonsContainer.className = 'mt-8 pt-4 border-t-2 border-gray-200';
-            let buttonsHTML = '';
-            
-            if(currentTab === 'reception') {
-                 buttonsHTML = `<button data-action="open_content" data-content-key="politicaRecepcao" class="action-btn bg-blue-500 hover:bg-blue-600 text-base px-6 py-2">Política da Recepção</button>`;
-            } else if (currentTab === 'creche') {
-                 buttonsHTML = `<button data-action="open_content" data-content-key="listaAtividades" class="action-btn bg-blue-500 hover:bg-blue-600 text-base px-6 py-2">Enciclopédia de Atividades</button><button data-action="open_content" data-content-key="rotinasEquipe" class="action-btn bg-indigo-500 hover:bg-indigo-600 text-base px-6 py-2">Rotinas e Equipe</button><button data-action="open_content" data-content-key="crechePolicy" class="action-btn bg-purple-500 hover:bg-purple-600 text-base px-6 py-2">Política De Creche e Hotel</button>`;
-            } else if (currentTab === 'hotel') {
-                buttonsHTML = `<button data-action="open_content" data-content-key="crechePolicy" class="action-btn bg-purple-500 hover:bg-purple-600 text-base px-6 py-2">Política De Creche e Hotel</button>`;
-            } else if (currentTab === 'taxi') {
-                buttonsHTML = `<button data-action="open_content" data-content-key="taxiPolicy" class="action-btn bg-green-500 hover:bg-green-600 text-base px-6 py-2">Política de Taxi Dog</button>`;
+            if (currentTab === 'creche') {
+                const plannerSection = document.createElement('section');
+                plannerSection.id = 'ia-activity-planner';
+                plannerSection.className = 'ia-planner-section mt-8 pt-6 border-t-2 border-gray-200 bg-green-50 border-green-200';
+                plannerSection.innerHTML = `
+                    <h2 class="text-2xl font-bold text-gray-800 mb-4 flex items-center gap-2"><i data-feather="cpu" class="w-6 h-6 text-green-600"></i> Planejador de Atividades</h2>
+                    <form id="ia-planner-form" class="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4">
+                        <div>
+                            <label for="ia-group-profile" class="block text-sm font-medium text-gray-700">Perfil do Grupo</label>
+                            <input type="text" id="ia-group-profile" class="mt-1 focus:ring-green-500 focus:border-green-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md p-2" placeholder="Ex: Filhotes de porte pequeno com muita energia">
+                        </div>
+                        <div>
+                            <label for="ia-weather" class="block text-sm font-medium text-gray-700">Condições Climáticas</label>
+                            <input type="text" id="ia-weather" class="mt-1 focus:ring-green-500 focus:border-green-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md p-2" placeholder="Ex: Ensolarado e quente">
+                        </div>
+                        <div>
+                            <label for="ia-focus" class="block text-sm font-medium text-gray-700">Foco Principal</label>
+                            <input type="text" id="ia-focus" class="mt-1 focus:ring-green-500 focus:border-green-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md p-2" placeholder="Ex: Gasto de energia e socialização">
+                        </div>
+                        <div>
+                            <label for="ia-observations" class="block text-sm font-medium text-gray-700">Observações (Opcional)</label>
+                            <input type="text" id="ia-observations" class="mt-1 focus:ring-green-500 focus:border-green-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md p-2" placeholder="Ex: Cão novo e tímido no grupo">
+                        </div>
+                        <div class="col-span-full">
+                            <button type="submit" class="w-full flex justify-center py-3 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500">
+                                ✨ Sugerir Atividades
+                            </button>
+                        </div>
+                    </form>
+                    <div id="ia-activity-result" class="ia-activity-result mt-4 prose max-w-none">
+                        <p class="text-gray-500">As sugestões de atividades aparecerão aqui.</p>
+                    </div>
+                `;
+                contentDisplay.appendChild(plannerSection);
+
+                const routineSection = document.createElement('section');
+                routineSection.id = 'ia-routine-generator';
+                routineSection.className = 'ia-planner-section mt-8 pt-6 border-t-2 border-gray-200 bg-indigo-50 border-indigo-200';
+                routineSection.innerHTML = `
+                     <h2 class="text-2xl font-bold text-gray-800 mb-4 flex items-center gap-2"><i data-feather="clock" class="w-6 h-6 text-indigo-600"></i> Gerador de Rotina Diária</h2>
+                     <form id="ia-routine-form" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-6 gap-y-4">
+                        <div class="col-span-full lg:col-span-1">
+                            <label for="ia-routine-dogs" class="block text-sm font-medium text-gray-700">Nº de Cães e Perfis</label>
+                            <input type="text" id="ia-routine-dogs" class="mt-1 focus:ring-indigo-500 focus:border-indigo-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md p-2" placeholder="Ex: 15 cães, maioria atletas">
+                        </div>
+                        <div class="col-span-full lg:col-span-2">
+                            <label for="ia-routine-goal" class="block text-sm font-medium text-gray-700">Objetivo do Dia</label>
+                            <input type="text" id="ia-routine-goal" class="mt-1 focus:ring-indigo-500 focus:border-indigo-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md p-2" placeholder="Ex: Dia calmo e de socialização">
+                        </div>
+                        <div>
+                            <label for="ia-routine-start-time" class="block text-sm font-medium text-gray-700">Início</label>
+                            <input type="time" id="ia-routine-start-time" class="mt-1 focus:ring-indigo-500 focus:border-indigo-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md p-2" value="08:00">
+                        </div>
+                        <div>
+                            <label for="ia-routine-meal-time" class="block text-sm font-medium text-gray-700">Refeição</label>
+                            <input type="time" id="ia-routine-meal-time" class="mt-1 focus:ring-indigo-500 focus:border-indigo-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md p-2" value="12:00">
+                        </div>
+                        <div>
+                            <label for="ia-routine-end-time" class="block text-sm font-medium text-gray-700">Fim</label>
+                            <input type="time" id="ia-routine-end-time" class="mt-1 focus:ring-indigo-500 focus:border-indigo-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md p-2" value="18:00">
+                        </div>
+                         <div class="col-span-full">
+                            <button type="submit" class="w-full flex justify-center py-3 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+                                📅 Gerar Rotina Completa
+                            </button>
+                        </div>
+                     </form>
+                     <div id="ia-routine-result" class="ia-activity-result mt-4 prose max-w-none">
+                        <p class="text-gray-500">A sua agenda diária detalhada aparecerá aqui.</p>
+                     </div>
+                `;
+                 contentDisplay.appendChild(routineSection);
+
+                const expertSection = document.createElement('section');
+                expertSection.id = 'ia-expert-chat';
+                expertSection.className = 'ia-planner-section mt-8 pt-6 border-t-2 border-gray-200 bg-amber-50 border-amber-200';
+                expertSection.innerHTML = `
+                    <h2 class="text-2xl font-bold text-gray-800 mb-4 flex items-center gap-2"><i data-feather="message-square" class="w-6 h-6 text-amber-600"></i> Converse com o Especialista</h2>
+                    <form id="ia-expert-form" class="space-y-4">
+                        <div>
+                             <label for="ia-expert-question" class="block text-sm font-medium text-gray-700">Faça qualquer pergunta sobre manejo, comportamento ou bem-estar:</label>
+                             <textarea id="ia-expert-question" rows="4" class="mt-1 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md p-2 focus:ring-amber-500 focus:border-amber-500" placeholder="Ex: Como posso ajudar um cão muito medroso a se sentir mais seguro no grupo?"></textarea>
+                        </div>
+                        <div>
+                            <button type="submit" class="w-full flex justify-center py-3 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-amber-600 hover:bg-amber-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-amber-500">
+                                🧠 Perguntar ao Assistente
+                            </button>
+                        </div>
+                    </form>
+                    <div id="ia-expert-result" class="ia-activity-result mt-4 prose max-w-none">
+                        <p class="text-gray-500">A resposta do nosso especialista aparecerá aqui.</p>
+                    </div>
+                `;
+                contentDisplay.appendChild(expertSection);
             }
-
-            policyButtonsContainer.innerHTML = `<h2 class="text-2xl font-bold text-gray-800 mb-4">Ferramentas e Políticas</h2><div class="flex gap-4 flex-wrap">${buttonsHTML}</div>`;
             
-            contentDisplay.appendChild(toolsAndPoliciesContainer);
-            contentDisplay.appendChild(policyButtonsContainer);
-
             addFilterEventListeners();
             feather.replace();
         }
@@ -1271,6 +1045,19 @@
             const historySearch = document.getElementById('busca-nome-historico');
             if(historyDate) historyDate.addEventListener('change', handleHistoryFilterChange);
             if(historySearch) historySearch.addEventListener('input', handleHistoryFilterChange);
+            
+            const iaPlannerForm = document.getElementById('ia-planner-form');
+            if (iaPlannerForm) {
+                iaPlannerForm.addEventListener('submit', handleGenerateIAPlan);
+            }
+             const iaRoutineForm = document.getElementById('ia-routine-form');
+            if (iaRoutineForm) {
+                iaRoutineForm.addEventListener('submit', handleGenerateIARoutine);
+            }
+            const iaExpertForm = document.getElementById('ia-expert-form');
+            if(iaExpertForm) {
+                iaExpertForm.addEventListener('submit', handleAskExpert);
+            }
         }
         function formatDate(ts, time) { if (!ts) return 'N/A'; const d = ts.toDate(), o = { day: '2-digit', month: '2-digit', year: 'numeric' }; if (time) { o.hour = '2-digit'; o.minute = '2-digit'; } return d.toLocaleString('pt-BR', o); }
         
@@ -1340,12 +1127,6 @@
         document.addEventListener('click', (e) => {
             const actionTarget = e.target.closest('[data-action]');
             
-            if (actionTarget && actionTarget.dataset.action === 'open_content') {
-                e.preventDefault();
-                openContentModal(actionTarget.dataset.contentKey);
-                return;
-            }
-
             const cardTarget = e.target.closest('.appointment-card');
             if (cardTarget && isCompactMode) {
                  const currentExpanded = document.querySelector('.appointment-card.expandido');
@@ -1394,6 +1175,220 @@
             }
         });
         
+        // --- INÍCIO: LÓGICA DO PLANEJADOR DE IA ---
+        function formatAIResponse(text) {
+             let html = text
+                .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>') 
+                .replace(/\* (.*?)(?=\n\*|\n\n|$)/g, '<li>$1</li>')
+                .replace(/(\<li\>.*?\<\/li\>)/gs, '<ul>$1</ul>');
+
+            // Converte tabelas Markdown
+            const tableRegex = /\|(.+)\|\n\|-+\|([\s\S]*?)(\n\n|$)/g;
+            html = html.replace(tableRegex, (match, header, body) => {
+                const headers = header.split('|').slice(1, -1).map(h => `<th>${h.trim()}</th>`).join('');
+                const rows = body.trim().split('\n').map(row => {
+                    const cells = row.split('|').slice(1, -1).map(c => `<td>${c.trim()}</td>`).join('');
+                    return `<tr>${cells}</tr>`;
+                }).join('');
+                return `<table><thead><tr>${headers}</tr></thead><tbody>${rows}</tbody></table>`;
+            });
+
+            return html;
+        }
+        
+        async function handleGenerateIAPlan(e) {
+            e.preventDefault();
+            const resultDiv = document.getElementById('ia-activity-result');
+            resultDiv.innerHTML = '<p class="text-gray-500">Aguarde, a IA está a pensar...</p>';
+            
+            try {
+                const perfilGrupo = document.getElementById('ia-group-profile').value;
+                const clima = document.getElementById('ia-weather').value;
+                const foco = document.getElementById('ia-focus').value;
+                const observacoes = document.getElementById('ia-observations').value;
+                const diaDaSemana = new Date().toLocaleDateString('pt-BR', { weekday: 'long' });
+                const horaAtual = new Date().toLocaleTimeString('pt-BR'); 
+
+                const promptParaGemini = `
+                    # PERSONA
+                    Aja como um adestrador profissional e especialista em comportamento canino, com certificação internacional em bem-estar e enriquecimento ambiental para cães em ambiente de creche. Sua prioridade máxima é a segurança e o estímulo positivo.
+
+                    # TAREFA PRINCIPAL
+                    Sua missão é criar um plano com 3 (três) atividades criativas, seguras e adequadas para um grupo de cães em uma creche, com base no contexto fornecido abaixo. As atividades devem ser fáceis de serem executadas pela equipe da creche com materiais comuns. Hoje é ${diaDaSemana}.
+
+                    # CONTEXTO FORNECIDO PELA EQUIPE
+                    - **Perfil do Grupo de Cães:** ${perfilGrupo}
+                    - **Condições Climáticas do Dia:** ${clima}
+                    - **Foco Principal Desejado:** ${foco}
+                    - **Observações Adicionais da Equipe:** ${observacoes || "Nenhuma observação adicional."}
+                    - **Fator de Criatividade (ignore este valor, use-o apenas para gerar uma resposta diferente):** ${horaAtual}
+
+                    # REGRAS E FORMATO DA SAÍDA
+                    - **Seja Criativo:** A cada nova solicitação, mesmo com os mesmos parâmetros, ofereça sugestões diferentes. Não repita atividades sugeridas anteriormente.
+                    - Forneça exatamente 3 (três) sugestões de atividades distintas.
+                    - Para CADA atividade, estruture a resposta OBRIGATORIAMENTE usando os seguintes títulos em negrito (Markdown):
+                      - **Nome da Atividade:** (Crie um nome divertido e fácil de lembrar)
+                      - **Benefícios Principais:** (Liste 2 a 3 benefícios, como "gasto de energia física", "estímulo cognitivo", "foco", etc.)
+                      - **Materiais Necessários:** (Liste os materiais de forma clara)
+                      - **Passo a Passo para a Equipe:** (Descreva as instruções de forma simples, numerada, como um guia para o funcionário.)
+                      - **⚠️ Pontos de Atenção e Segurança:** (Descreva os cuidados que a equipe deve ter para garantir a segurança de todos os cães durante a atividade.)
+                    - Use uma linguagem clara, objetiva e encorajadora para a equipe da creche.
+                    - Não adicione introduções ou conclusões. Apenas as 3 atividades no formato solicitado.
+                `;
+
+                const chatHistory = [{ role: "user", parts: [{ text: promptParaGemini }] }];
+                const payload = { contents: chatHistory };
+                const apiKey = ""; 
+                const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
+
+                const response = await fetch(apiUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                
+                if (!response.ok) {
+                    const errorBody = await response.text();
+                    console.error("Corpo do erro da API:", errorBody);
+                    throw new Error(`Erro na API: ${response.statusText}`);
+                }
+
+                const result = await response.json();
+
+                if (result.candidates && result.candidates[0] && result.candidates[0].content.parts[0]) {
+                    const text = result.candidates[0].content.parts[0].text;
+                    resultDiv.innerHTML = formatAIResponse(text);
+                } else {
+                     console.error("Resposta da IA inválida:", result);
+                    throw new Error("Resposta da IA inválida ou sem conteúdo.");
+                }
+
+            } catch (error) {
+                console.error("Erro ao gerar plano com IA:", error);
+                resultDiv.innerHTML = `<p class="text-red-500">Ocorreu um erro ao gerar as atividades. Verifique o console para mais detalhes.</p>`;
+            }
+        }
+
+        async function handleGenerateIARoutine(e) {
+            e.preventDefault();
+            const resultDiv = document.getElementById('ia-routine-result');
+            resultDiv.innerHTML = '<p class="text-gray-500">Aguarde, a IA está a criar a rotina completa...</p>';
+
+            try {
+                const dogProfiles = document.getElementById('ia-routine-dogs').value;
+                const dayGoal = document.getElementById('ia-routine-goal').value;
+                const startTime = document.getElementById('ia-routine-start-time').value;
+                const mealTime = document.getElementById('ia-routine-meal-time').value;
+                const endTime = document.getElementById('ia-routine-end-time').value;
+                const diaDaSemana = new Date().toLocaleDateString('pt-BR', { weekday: 'long' });
+
+                 const promptParaGemini = `
+                    # PERSONA
+                    Aja como um gestor de operações sênior de uma creche canina de luxo. A sua especialidade é criar rotinas diárias eficientes que equilibram o bem-estar dos cães com a capacidade da equipa.
+
+                    # TAREFA PRINCIPAL
+                    Crie uma rotina diária completa, dividida por horários, para a equipa da creche. A rotina deve ser realista, segura e adaptada ao contexto fornecido. Comece às ${startTime} e termine às ${endTime}.
+
+                    # CONTEXTO FORNECIDO PELA EQUIPE
+                    - **Dia da Semana:** ${diaDaSemana}
+                    - **Perfil e Quantidade de Cães Hoje:** ${dogProfiles}
+                    - **Principal Objetivo do Dia:** ${dayGoal}
+                    - **Hora da Refeição Principal:** ${mealTime}
+
+                    # REGRAS E FORMATO DA SAÍDA
+                    - Crie uma tabela (usando Markdown) com as colunas: "Horário", "Atividade Principal", e "Instruções para a Equipa".
+                    - Detalhe a rotina desde a hora de início até à hora de fim fornecidas.
+                    - Inclua momentos de chegada, atividades de alta e baixa energia, alimentação (na hora indicada), períodos de descanso obrigatório e preparação para a saída.
+                    - As instruções para a equipa devem ser práticas e diretas.
+                    - No final, adicione uma secção em negrito chamada **Lembrete para a Equipa:** com 2 ou 3 dicas gerais de segurança ou bem-estar para o dia.
+                    - Seja conciso e direto.
+                `;
+
+                const chatHistory = [{ role: "user", parts: [{ text: promptParaGemini }] }];
+                const payload = { contents: chatHistory };
+                const apiKey = ""; // A plataforma fornecerá a chave
+                const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
+
+                const response = await fetch(apiUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                
+                if (!response.ok) throw new Error(`Erro na API: ${response.statusText}`);
+
+                const result = await response.json();
+
+                if (result.candidates && result.candidates[0] && result.candidates[0].content.parts[0]) {
+                    const text = result.candidates[0].content.parts[0].text;
+                    resultDiv.innerHTML = formatAIResponse(text);
+                } else {
+                    throw new Error("Resposta da IA inválida.");
+                }
+
+            } catch (error) {
+                console.error("Erro ao gerar rotina com IA:", error);
+                resultDiv.innerHTML = `<p class="text-red-500">Ocorreu um erro ao gerar a rotina. Tente novamente.</p>`;
+            }
+        }
+
+        async function handleAskExpert(e) {
+            e.preventDefault();
+            const resultDiv = document.getElementById('ia-expert-result');
+            const questionInput = document.getElementById('ia-expert-question');
+            const perguntaDoUsuario = questionInput.value;
+            if (!perguntaDoUsuario.trim()) {
+                resultDiv.innerHTML = `<p class="text-amber-600">Por favor, escreva a sua pergunta.</p>`;
+                return;
+            }
+            resultDiv.innerHTML = '<p class="text-gray-500">A consultar o nosso especialista... aguarde.</p>';
+            
+            try {
+                const promptFinalAberto = `
+                    # PERSONA E DIRETRIZES GERAIS
+                    Você é o 'Gênio Canino', o assistente de IA especialista da nossa creche e hotel pet. Sua personalidade é amigável, calma, profissional e extremamente focada em segurança e bem-estar animal. Seu conhecimento abrange adestramento com reforço positivo, comportamento canino, gestão de matilha, enriquecimento ambiental e noções de primeiros socorros (sempre recomendando um veterinário para diagnósticos).
+
+                    # REGRAS DE OURO
+                    1.  **Segurança em Primeiro Lugar:** Todas as suas sugestões devem priorizar a segurança dos cães e dos funcionários.
+                    2.  **Reforço Positivo:** Todas as técnicas de manejo e adestramento devem ser baseadas 100% em reforço positivo.
+                    3.  **Consulte um Veterinário:** Se a pergunta envolver qualquer sintoma de saúde (vômito, diarreia, letargia, convulsão, etc.), sua resposta DEVE, obrigatoriamente, terminar com a recomendação de "consultar um médico veterinário imediatamente para um diagnóstico preciso".
+                    4.  **Seja um Parceiro:** Aja como um parceiro da equipe, oferecendo soluções práticas e fáceis de aplicar no ambiente da creche.
+
+                    # PERGUNTA DO FUNCIONÁRIO
+                    A seguir está a pergunta feita por um membro da nossa equipe. Responda de forma clara, didática e, se possível, em formato de lista de ações.
+
+                    "${perguntaDoUsuario}"
+                `;
+
+                const chatHistory = [{ role: "user", parts: [{ text: promptFinalAberto }] }];
+                const payload = { contents: chatHistory };
+                const apiKey = "";
+                const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
+
+                const response = await fetch(apiUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                
+                if (!response.ok) throw new Error(`Erro na API: ${response.statusText}`);
+
+                const result = await response.json();
+
+                if (result.candidates && result.candidates[0] && result.candidates[0].content.parts[0]) {
+                    const text = result.candidates[0].content.parts[0].text;
+                    resultDiv.innerHTML = formatAIResponse(text);
+                } else {
+                    throw new Error("Resposta da IA inválida.");
+                }
+
+            } catch (error) {
+                console.error("Erro ao consultar o especialista IA:", error);
+                resultDiv.innerHTML = `<p class="text-red-500">Ocorreu um erro. O nosso especialista parece estar a beber um café. Tente novamente.</p>`;
+            }
+        }
+        // --- FIM: LÓGICA DO PLANEJADOR DE IA ---
+        
         function atualizarContadores() {
             const grupoGrandes = document.getElementById('grupo-grandes');
             const grupoPequenos = document.getElementById('grupo-pequenos');
@@ -1408,8 +1403,6 @@
                 contadorGeral.textContent = numGrandes + numPequenos;
             }
         }
-
-        // --- LÓGICA DO HISTÓRICO ---
         function handleHistoryFilterChange() {
             const dateValue = document.getElementById('filtro-data-historico').value;
             const searchValue = document.getElementById('busca-nome-historico').value.toLowerCase();
@@ -1440,7 +1433,6 @@
 
             renderHistoryResults(results, false);
         }
-
         function renderHistoryResults(appointments, isInitial) {
             const container = document.getElementById('historico-list-container');
             if (!container) return;
@@ -1461,7 +1453,6 @@
             });
             feather.replace();
         }
-        
         function openEditModal(id) {
             const appt = localAppointments.find(a => a.id === id); if (!appt) return;
             editForm.innerHTML = getFormHTML('edit-'); const prefix = 'edit-';
@@ -1488,7 +1479,8 @@
         function openChecklistModal(id) {
             const appt = localAppointments.find(a => a.id === id); if (!appt) return;
             checklistForm.dataset.id = id;
-
+            const checklistInfo = document.getElementById('checklist-info');
+            const checklistItemsContainer = document.getElementById('checklist-items');
             checklistInfo.innerHTML = `
                 <div class="text-center mb-4"><p class="text-sm text-gray-500">Período da Hospedagem</p><p class="font-semibold">${formatDate(appt.hotelPeriodStart)} a ${formatDate(appt.hotelPeriodEnd)}</p></div>
                 <div class="grid grid-cols-3 gap-4 text-center"><div><p class="text-sm text-gray-500">Nome do Pet</p><p class="font-bold text-lg">${appt.petName}</p></div><div><p class="text-sm text-gray-500">Tutor</p><p class="font-bold text-lg">${appt.tutorName}</p></div><div><p class="text-sm text-gray-500">Raça</p><p class="font-bold text-lg">${appt.petBreed}</p></div></div>`;
@@ -1555,25 +1547,11 @@
             printWindow.document.close();
             setTimeout(() => { printWindow.print(); printWindow.close(); }, 500);
         }
-
-        // --- Lógica do Modal Genérico ---
-        function openContentModal(contentKey) {
-            const data = bancoDeConteudos[contentKey];
-            if (!data) {
-                console.error("Conteúdo não encontrado para a chave:", contentKey);
-                return;
-            }
-            genericModalTitle.textContent = data.titulo;
-            genericModalContent.innerHTML = data.html;
-            genericContentModal.classList.remove('hidden');
-        }
         
         // --- MODAL CONTROLS ---
         closeEditModalBtn.addEventListener('click', () => editModal.classList.add('hidden'));
         closeChecklistModalBtn.addEventListener('click', () => checklistModal.classList.add('hidden'));
-        closeGenericModalBtn.addEventListener('click', () => genericContentModal.classList.add('hidden'));
-        checklistModal.addEventListener('click', (e) => { if (e.target.id === 'print-checklist-btn') printChecklist(); });
-
+        
         let confirmCallback = null;
         function showConfirmationModal(title, message, callback, isError = false) {
             modalTitle.textContent = title; modalMessage.textContent = message;
@@ -1588,7 +1566,7 @@
         // --- INITIAL SETUP ---
         bookingForm.innerHTML = getFormHTML('');
         initializeFormLogic('');
-        performTabSwitch('reception'); // Inicia na aba de recepção por padrão
+        performTabSwitch('reception');
         feather.replace();
 
     </script>
