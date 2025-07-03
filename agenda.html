@@ -209,8 +209,10 @@
         .modo-compacto .appointment-card.expandido {
             position: relative;
             z-index: 10;
-            transform: scale(1.08);
             box-shadow: 0 8px 30px rgba(0,0,0,0.2);
+            /* ALTERAÇÃO: Card expandido ocupa todas as colunas do grid */
+            grid-column: 1 / -1;
+            transform: scale(1.02); /* Scale sutil para destacar */
         }
 
         .modo-compacto .appointment-card.expandido .card-details {
